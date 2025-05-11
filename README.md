@@ -1,5 +1,12 @@
 # Guía de Uso de Xoconodo – Editor de Diagramas v1.5.1
 
+
+![XOCONODO](xocolienzo.jpg)
+
+
+## Acceso Rápido a la Aplicación
+[XOCONODO - Demo en vivo](https://xococode.github.io/xoconodo/)
+
 Xoconodo es un editor de diagramas basado en React Flow que permite crear, conectar y personalizar nodos de forma visual. A continuación se describen sus principales componentes y flujos de trabajo.
 
 ---
