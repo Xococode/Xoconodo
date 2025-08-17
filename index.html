@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xoconodo - Editor v1.6.10 (Control Opacidad Dibujo)</title>
+    <title>Xoconodo - Editor v1.8.5 (Reload Note)</title>
     <link rel="stylesheet" href="https://unpkg.com/reactflow@latest/dist/style.css" />
     <style>
         :root {
@@ -36,7 +36,7 @@
         .drawing-toolbar-panel {
             background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex; flex-direction: column; padding: 8px; gap: 6px; max-width: fit-content; 
-            position: absolute; bottom: 150px; /* Ajustado previamente */ right: 20px; z-index: 3 !important; 
+            position: absolute; bottom: 150px; right: 20px; z-index: 3 !important; 
         }
         .drawing-toolbar-panel .drawing-tool-group { display: flex; gap: 4px; margin-bottom: 4px; align-items: center; }
         .drawing-toolbar-panel label { font-size: 11px; margin-right: 4px; color: #555; white-space: nowrap; }
@@ -54,8 +54,6 @@
         .zoom-controls-panel { display: flex; flex-direction: column; gap: 4px; background-color: rgba(255, 255, 255, 0.9); border-radius: 4px; padding: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .react-flow__minimap { background-color: rgba(240, 240, 240, 0.85); border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .custom-attribution { position: absolute; bottom: 5px; right: 5px; font-size: 10px; background: rgba(255,255,255,0.7); padding: 2px 5px; border-radius: 3px; }
-
-        /* --- Resto de estilos (sin cambios importantes) --- */
         .sidebar-button { display: flex; align-items: center; padding: 8px 12px; border-radius: 4px; background-color: white; border: 1px solid #eaeaea; cursor: pointer; font-size: 14px; color: var(--secondary-color); transition: all 0.2s; gap: 6px; white-space: nowrap; }
         .sidebar-button svg { stroke: currentColor; width: 14px; height: 14px; }
         .sidebar-button:hover { background-color: #f9f9f9; border-color: #ddd; }
@@ -82,7 +80,7 @@
         .tools-toolbar-divider { width: 1px; background-color: #eaeaea; margin: 0 4px;}
         .toolbar-group { display: flex; gap: 4px; align-items: center; padding: 2px 4px; border: 1px solid #eee; border-radius: 4px;}
         .toolbar-group-label { font-size: 10px; color: #777; margin-right: 4px; white-space: nowrap; }
-        .base-node { padding: 10px; border-radius: 6px; min-width: 150px; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 500; font-size: 13px; text-align: center; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: grab; white-space: pre-line; border: 2px solid var(--node-border-color-default); background-color: var(--node-background-color-default); }
+        .base-node { padding: 10px; border-radius: 6px; min-width: 150px; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 500; font-size: 13px; text-align: center; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: grab; white-space: pre-wrap; border: 2px solid var(--node-border-color-default); background-color: var(--node-background-color-default); }
         .react-flow__node-selected .base-node { box-shadow: 0 0 0 2px var(--primary-color), 0 4px 12px rgba(0,0,0,0.2); }
         .custom-node.rect { border-radius: 6px; } .custom-node.circle { border-radius: 50%; width: 80px; height: 80px; padding: 5px; } .custom-node.diamond { width: 100px; height: 100px; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); padding: 15px; }
         .node-label-input, .node-config-input { width: 90%; padding: 4px 6px; border: 1px solid var(--primary-color); border-radius: 3px; font-family: inherit; font-size: inherit; text-align: center; background-color: rgba(255, 255, 255, 0.9); box-sizing: border-box; resize: none; overflow: hidden; margin-top: 5px; }
@@ -134,241 +132,253 @@
             const ReactFlowComponent = ReactFlow.default;
 
             // --- Definiciones iniciales y creación de nodos ---
-            // ... (sin cambios desde v1.6.8)
             let nodeIdCounter = 0;
             const createNewNode = (id, position, data = {}) => ({ id: id.toString(), type: 'customNode', position, data: { label: data.label || `Node ${id}`, shape: data.shape || 'rect', color: data.color || '#ffffff', borderColor: data.borderColor || '#FF0066', borderStyle: data.borderStyle || 'solid', outputValue: data.label || `Node ${id}` } });
             const createNewImageNode = (id, position, data = {}) => ({ id: id.toString(), type: 'imageNode', position, data: { src: data.src || 'https://via.placeholder.com/150', width: data.width || 150, height: data.height || 100, rotation: data.rotation || 0, originalWidth: data.originalWidth || 150, originalHeight: data.originalHeight || 100 }, style: { width: data.width || 150, height: data.height || 100 } });
             const createConcatenateNode = (id, position, data = {}) => ({ id: id.toString(), type: 'concatenateNode', position, data: { label: 'Concatenar', inputs: {input_0: '', input_1: ''}, outputValue: '', separator: data.separator || '', numInputs: 2, ...data } });
             const createResultNode = (id, position, data = {}) => ({ id: id.toString(), type: 'resultNode', position, data: { label: 'Resultado', inputValue: '', ...data } });
+            const createDisplayNode = (id, position, data = {}) => ({ id: id.toString(), type: 'displayNode', position, data: { label: 'Display & Pass', inputValue: '', outputValue: '', ...data } });
             const createDownloadNode = (id, position, data = {}) => ({ id: id.toString(), type: 'downloadNode', position, data: { label: 'Descargar', inputValue: '', filename: data.filename || 'datos.txt', ...data } });
             const createCapitalizeNode = (id, position, data = {}) => ({ id: id.toString(), type: 'capitalizeNode', position, data: { label: 'Capitalizar', inputValue: '', outputValue: '', ...data } });
             const createUppercaseNode = (id, position, data = {}) => ({ id: id.toString(), type: 'uppercaseNode', position, data: { label: 'Mayúsculas', inputValue: '', outputValue: '', ...data } } );
             const createLowercaseNode = (id, position, data = {}) => ({ id: id.toString(), type: 'lowercaseNode', position, data: { label: 'Minúsculas', inputValue: '', outputValue: '', ...data } });
-            let initialNodes = [createNewNode(++nodeIdCounter, { x: window.innerWidth/2 - 75, y: window.innerHeight/3 - 50 }, {label: 'Nodo Inicial'})];
+            const createGeminiNode = (id, position, data = {}) => ({ id: id.toString(), type: 'geminiNode', position, data: { label: 'Tarea Gemini', apiKey: data.apiKey || '', inputValue: '', outputValue: '', status: 'Ready', ...data } });
+            const createScriptNode = (id, position, data = {}) => ({ id: id.toString(), type: 'scriptNode', position, data: { label: 'Script JS', script: data.script || '// Usa la variable "input" para acceder al valor de entrada.\nreturn input;', inputValue: '', outputValue: '', ...data } });
+            const createFileAutoRunNode = (id, position, data = {}) => ({ id: id.toString(), type: 'fileAutoRunNode', position, data: { label: 'Auto Run from File', filename: data.filename || 'No file selected', interval: data.interval || 10, isRunning: false, countdown: data.interval || 10, outputValue: '', ...data } });
+
+            let initialNodes = [createNewNode(++nodeIdCounter, { x: window.innerWidth/2 - 75, y: window.innerHeight/3 - 50 }, {label: 'Escribe tu prompt aquí'})];
             let initialEdges = [];
             let initialViewport = { x: 0, y: 0, zoom: 1 };
             const urlParams = new URLSearchParams(window.location.search);
             const flowParam = urlParams.get('flow');
             if (flowParam) { try { const decodedFlow = JSON.parse(atob(decodeURIComponent(flowParam))); if (decodedFlow.nodes && decodedFlow.edges) { initialNodes = decodedFlow.nodes; initialEdges = decodedFlow.edges; initialViewport = decodedFlow.viewport || initialViewport; let maxIdFromNodes = 0; if (initialNodes && initialNodes.length > 0) { maxIdFromNodes = initialNodes.reduce((maxId, node) => { const numericId = parseInt(String(node.id).replace(/[^0-9]/g, '')); return Math.max(maxId, isNaN(numericId) ? 0 : numericId); }, 0); } let maxIdFromEdges = 0; if (initialEdges && initialEdges.length > 0) { maxIdFromEdges = initialEdges.reduce((maxId, edge) => { const idParts = String(edge.id).split('-'); const numericIdStr = idParts[idParts.length -1] || ""; const numericId = parseInt(numericIdStr.replace(/[^0-9]/g, '')); return Math.max(maxId, isNaN(numericId) ? 0 : numericId); }, 0); } nodeIdCounter = Math.max(nodeIdCounter, maxIdFromNodes, maxIdFromEdges); } } catch (e) { console.error("Error al cargar el flujo desde la URL:", e); } }
             
-            // --- Componentes ReactFlow (CustomNode, ImageNode, etc. - sin cambios) ---
-            // ... (Omitidos por brevedad)
-             const CustomNode = ({ id, data, selected, isConnectable, onLabelChange, recordAction }) => { const { getNode, setNodesDraggable } = useReactFlow(); const [isEditing, setIsEditing] = React.useState(false); const [labelText, setLabelText] = React.useState(data.label); const [originalLabelOnEdit, setOriginalLabelOnEdit] = React.useState(''); const inputRef = React.useRef(null); React.useEffect(() => { setLabelText(data.label); }, [data.label]); const handleDoubleClick = React.useCallback(() => { setOriginalLabelOnEdit(data.label); setIsEditing(true); setNodesDraggable(false); }, [data.label, setNodesDraggable]); const finishEditing = React.useCallback((shouldRecord = false) => { setIsEditing(false); setNodesDraggable(true); if (shouldRecord && typeof recordAction === 'function') recordAction(); }, [setNodesDraggable, recordAction]); const handleSaveText = React.useCallback(() => { let finalLabel = labelText.trim(); let recorded = false; if (finalLabel === '') { finalLabel = originalLabelOnEdit; setLabelText(originalLabelOnEdit); } if (data.label !== finalLabel) { onLabelChange(id, finalLabel); finishEditing(true); recorded = true; } if(!recorded) finishEditing(false); }, [id, labelText, data.label, originalLabelOnEdit, onLabelChange, finishEditing]); const handleChange = (event) => { const newText = event.target.value; setLabelText(newText); onLabelChange(id, newText); }; const handleKeyDown = (event) => { if (event.key === 'Escape') { setLabelText(originalLabelOnEdit); onLabelChange(id, originalLabelOnEdit); finishEditing(false); } else if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSaveText(); } }; React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length); } }, [isEditing]); const handleAddNodeBelow = React.useCallback(() => { const sourceNode = getNode(id); if (!sourceNode || !window.onAddNodeAndEdgeFromCustomNode) return; nodeIdCounter++; const newNodeId = nodeIdCounter.toString(); const newNodeData = { label: `Node ${newNodeId}`, shape: data.shape, color: data.color, borderColor: data.borderColor, borderStyle: data.borderStyle }; const newNode = createNewNode(newNodeId, { x: sourceNode.position.x, y: sourceNode.position.y + (sourceNode.height || 80) + 60 }, newNodeData); const newEdge = { id: `e-${id}-${newNodeId}`, source: id, sourceHandle: 'bottom-source', target: newNodeId, targetHandle: 'top-target', type: 'customEdge', label: '', data: { lineStyle: window.getSelectedEdgeLineStyle ? window.getSelectedEdgeLineStyle() : 'solid' }, style: { stroke: data.borderColor || '#FF0066', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: data.borderColor || '#FF0066' } }; window.onAddNodeAndEdgeFromCustomNode(newNode, newEdge); }, [id, data, getNode]); const nodeStyle = { background: data.color, borderColor: data.borderColor, borderStyle: data.borderStyle, borderWidth: data.borderStyle === 'none' ? 0 : '2px' }; if (data.shape === 'circle') { Object.assign(nodeStyle, { width: '80px', height: '80px' }); } if (data.shape === 'diamond') { Object.assign(nodeStyle, { width: '100px', height: '100px' }); } const classNames = ['base-node custom-node', data.shape || 'rect'].join(' '); const textareaRows = labelText.split('\n').length || 1; const handles = [ { id: 'top-target', type: 'target', position: Position.Top }, { id: 'bottom-source', type: 'source', position: Position.Bottom }, { id: 'left-target', type: 'target', position: Position.Left },  { id: 'right-source', type: 'source', position: Position.Right }, ]; return React.createElement('div', { className: classNames, style: nodeStyle, onDoubleClick: handleDoubleClick }, isEditing ? React.createElement('textarea', { ref: inputRef, value: labelText, onChange: handleChange, onKeyDown: handleKeyDown, onBlur: handleSaveText, className: 'node-label-input', onClick: (e) => e.stopPropagation(), rows: textareaRows, style: { width: '90%', resize: 'none' }}) : data.label, handles.map(h => React.createElement(Handle, { key: h.id, id: h.id, type: h.type, position: h.position, className: 'node-handle', style: {background: data.borderColor}, isConnectable: isConnectable && !isEditing })), !isEditing && React.createElement('div', { className: 'node-add-button', onClick: handleAddNodeBelow, title: "Añadir nodo debajo" }, '+') ); };
-            const ImageNode = ({ id, data, selected }) => { const { setNodes, getNode } = useReactFlow(); const nodeRef = React.useRef(null); const [isResizing, setIsResizing] = React.useState(false); const [initialResizeState, setInitialResizeState] = React.useState(null); const onResizeStart = React.useCallback((event) => { event.preventDefault(); event.stopPropagation(); const node = getNode(id); setIsResizing(true); setInitialResizeState({ mouseX: event.clientX, mouseY: event.clientY, width: node.data.width, height: node.data.height, aspectRatio: node.data.originalWidth / node.data.originalHeight }); }, [id, getNode]); const onResize = React.useCallback((event) => { if (!isResizing || !initialResizeState) return; const dx = event.clientX - initialResizeState.mouseX; let newWidth = initialResizeState.width + dx; let newHeight = newWidth / initialResizeState.aspectRatio; newWidth = Math.max(20, newWidth); newHeight = Math.max(20 / initialResizeState.aspectRatio, newHeight); setNodes(nds => nds.map(n => (n.id === id) ? { ...n, data: { ...n.data, width: newWidth, height: newHeight }, style: { ...n.style, width: newWidth, height: newHeight } } : n)); }, [isResizing, initialResizeState, id, setNodes]); const onResizeEnd = React.useCallback(() => { setIsResizing(false); setInitialResizeState(null); const node = getNode(id); setNodes(nds => nds.map(n => (n.id === id) ? { ...n, width: n.data.width, height: n.data.height } : n)); if(window.recordAction) window.recordAction(); }, [id, setNodes, getNode]); React.useEffect(() => { if (isResizing) { document.addEventListener('mousemove', onResize); document.addEventListener('mouseup', onResizeEnd); } else { document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', onResizeEnd); } return () => { document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', onResizeEnd); }; }, [isResizing, onResize, onResizeEnd]); const internalDivStyle = { width: data.width, height: data.height, transform: `rotate(${data.rotation || 0}deg)`}; return React.createElement('div', { ref: nodeRef, className: 'image-node-content', style: internalDivStyle }, React.createElement('img', { src: data.src, alt: 'Image node', draggable: false }), selected && React.createElement('div', { className: 'resize-handle', onMouseDown: onResizeStart }) ); };
+            // --- Componentes ReactFlow ---
+            const CustomNode = ({ id, data, isConnectable, onLabelChange, recordAction }) => {
+                const { getNode, setNodesDraggable } = useReactFlow();
+                const [isEditing, setIsEditing] = React.useState(false);
+                const [labelText, setLabelText] = React.useState(data.label);
+                const [originalLabelOnEdit, setOriginalLabelOnEdit] = React.useState('');
+                const inputRef = React.useRef(null);
+                React.useEffect(() => { setLabelText(data.label); }, [data.label]);
+                const handleDoubleClick = React.useCallback(() => { setOriginalLabelOnEdit(data.label); setIsEditing(true); setNodesDraggable(false); }, [data.label, setNodesDraggable]);
+                const finishEditing = React.useCallback((shouldRecord = false) => { setIsEditing(false); setNodesDraggable(true); if (shouldRecord && typeof recordAction === 'function') recordAction(); }, [setNodesDraggable, recordAction]);
+                const handleSaveText = React.useCallback(() => {
+                    let finalLabel = labelText;
+                    let recorded = false;
+                    if (finalLabel === '') { finalLabel = originalLabelOnEdit; setLabelText(originalLabelOnEdit); }
+                    if (data.label !== finalLabel) { onLabelChange(id, finalLabel); finishEditing(true); recorded = true; }
+                    if(!recorded) finishEditing(false);
+                }, [id, labelText, data.label, originalLabelOnEdit, onLabelChange, finishEditing]);
+                const handleChange = (event) => { const newText = event.target.value; setLabelText(newText); onLabelChange(id, newText); };
+                const handleKeyDown = (event) => { if (event.key === 'Escape') { setLabelText(originalLabelOnEdit); onLabelChange(id, originalLabelOnEdit); finishEditing(false); } else if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleSaveText(); } };
+                React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length); } }, [isEditing]);
+                const handleAddNodeBelow = React.useCallback(() => { const sourceNode = getNode(id); if (!sourceNode || !window.onAddNodeAndEdgeFromCustomNode) return; nodeIdCounter++; const newNodeId = nodeIdCounter.toString(); const newNodeData = { label: `Node ${newNodeId}`, shape: data.shape, color: data.color, borderColor: data.borderColor, borderStyle: data.borderStyle }; const newNode = createNewNode(newNodeId, { x: sourceNode.position.x, y: sourceNode.position.y + (sourceNode.height || 80) + 60 }, newNodeData); const newEdge = { id: `e-${id}-${newNodeId}`, source: id, sourceHandle: 'bottom-source', target: newNodeId, targetHandle: 'top-target', type: 'customEdge', label: '', data: { lineStyle: window.getSelectedEdgeLineStyle ? window.getSelectedEdgeLineStyle() : 'solid' }, style: { stroke: data.borderColor || '#FF0066', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: data.borderColor || '#FF0066' } }; window.onAddNodeAndEdgeFromCustomNode(newNode, newEdge); }, [id, data, getNode]);
+                const nodeStyle = { background: data.color, borderColor: data.borderColor, borderStyle: data.borderStyle, borderWidth: data.borderStyle === 'none' ? 0 : '2px' }; if (data.shape === 'circle') { Object.assign(nodeStyle, { width: '80px', height: '80px' }); } if (data.shape === 'diamond') { Object.assign(nodeStyle, { width: '100px', height: '100px' }); }
+                const classNames = ['base-node custom-node', data.shape || 'rect'].join(' ');
+                const textareaRows = labelText.split('\n').length || 1;
+                const handles = [ { id: 'top-target', type: 'target', position: Position.Top }, { id: 'bottom-source', type: 'source', position: Position.Bottom }, { id: 'left-target', type: 'target', position: Position.Left }, { id: 'right-source', type: 'source', position: Position.Right } ];
+                return React.createElement('div', { className: classNames, style: nodeStyle, onDoubleClick: handleDoubleClick }, isEditing ? React.createElement('textarea', { ref: inputRef, value: labelText, onChange: handleChange, onKeyDown: handleKeyDown, onBlur: handleSaveText, className: 'node-label-input', onClick: (e) => e.stopPropagation(), rows: textareaRows, style: { width: '90%', resize: 'none' }}) : data.label, handles.map(h => React.createElement(Handle, { key: h.id, id: h.id, type: h.type, position: h.position, className: 'node-handle', style: {background: data.borderColor}, isConnectable: isConnectable && !isEditing })), !isEditing && React.createElement('div', { className: 'node-add-button', onClick: handleAddNodeBelow, title: "Añadir nodo debajo" }, '+') );
+            };
+            const ImageNode = ({ id, data, selected }) => { const { setNodes, getNode } = useReactFlow(); const nodeRef = React.useRef(null); const [isResizing, setIsResizing] = React.useState(false); const [initialResizeState, setInitialResizeState] = React.useState(null); const onResizeStart = React.useCallback((event) => { event.preventDefault(); event.stopPropagation(); const node = getNode(id); setIsResizing(true); setInitialResizeState({ mouseX: event.clientX, mouseY: event.clientY, width: node.data.width, height: node.data.height, aspectRatio: node.data.originalWidth / node.data.originalHeight }); }, [id, getNode]); const onResize = React.useCallback((event) => { if (!isResizing || !initialResizeState) return; const dx = event.clientX - initialResizeState.mouseX; let newWidth = initialResizeState.width + dx; let newHeight = newWidth / initialResizeState.aspectRatio; newWidth = Math.max(20, newWidth); newHeight = Math.max(20 / initialResizeState.aspectRatio, newHeight); setNodes(nds => nds.map(n => (n.id === id) ? { ...n, data: { ...n.data, width: newWidth, height: newHeight }, style: { ...n.style, width: newWidth, height: newHeight } } : n)); }, [isResizing, initialResizeState, id, setNodes]); const onResizeEnd = React.useCallback(() => { setIsResizing(false); setInitialResizeState(null); if(window.recordAction) window.recordAction(); }, [id, setNodes, getNode]); React.useEffect(() => { if (isResizing) { document.addEventListener('mousemove', onResize); document.addEventListener('mouseup', onResizeEnd); } else { document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', onResizeEnd); } return () => { document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', onResizeEnd); }; }, [isResizing, onResize, onResizeEnd]); const internalDivStyle = { width: data.width, height: data.height, transform: `rotate(${data.rotation || 0}deg)`}; return React.createElement('div', { ref: nodeRef, className: 'image-node-content', style: internalDivStyle }, React.createElement('img', { src: data.src, alt: 'Image node', draggable: false }), selected && React.createElement('div', { className: 'resize-handle', onMouseDown: onResizeStart }) ); };
             const ConcatenateNodeComponent = ({ id, data, isConnectable }) => { const { setNodes, setNodesDraggable } = useReactFlow(); const [isEditing, setIsEditing] = React.useState(false); const [separator, setSeparator] = React.useState(data.separator || ''); const inputRef = React.useRef(null); const handleDoubleClick = () => { setIsEditing(true); setNodesDraggable(false); }; const handleSaveConfig = () => { let changed = data.separator !== separator; setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, separator: separator } } : n)); setIsEditing(false); setNodesDraggable(true); if(changed && window.recordAction) window.recordAction(); }; const handleChange = (e) => setSeparator(e.target.value); const handleKeyDown = (e) => { if (e.key === 'Escape') { setSeparator(data.separator || ''); setIsEditing(false); setNodesDraggable(true); } else if (e.key === 'Enter') { handleSaveConfig(); }}; React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }}, [isEditing]); const inputHandles = []; for (let i = 0; i < (data.numInputs || 2); i++) { inputHandles.push(React.createElement(Handle, { key: `input_${i}`, type: "target", position: Position.Left, id: `input_${i}`, style: { top: `${(i + 1) * (100 / ((data.numInputs || 2) + 1))}%` }, className: 'node-handle', isConnectable: isConnectable })); } return React.createElement('div', { className: 'base-node', style: { borderColor: '#4A90E2' }, onDoubleClick: handleDoubleClick }, React.createElement('div', null, data.label || 'Concatenar'), React.createElement('div', { className: 'functional-node-content', style: {fontSize: '11px', color: '#666'} }, `Salida: ${data.outputValue ? data.outputValue.substring(0, 30) : ''}${data.outputValue && data.outputValue.length > 30 ? '...' : ''}`), isEditing && React.createElement('input', { ref: inputRef, type: 'text', value: separator, onChange: handleChange, onKeyDown: handleKeyDown, onBlur: handleSaveConfig, className: 'node-config-input', placeholder: 'Separador (ej: , )', onClick: (e) => e.stopPropagation() }), ...inputHandles, React.createElement(Handle, { type: "source", position: Position.Right, id: "output", className: 'node-handle', isConnectable: isConnectable }) ); };
             const ResultNodeComponent = ({ data, isConnectable }) => React.createElement('div', { className: 'base-node', style: { borderColor: '#50E3C2' } }, React.createElement('div', null, data.label), React.createElement('div', { className: 'functional-node-content' }, data.inputValue || '(Vacío)'), React.createElement(Handle, { type: "target", position: Position.Left, id: "input", className: 'node-handle', isConnectable: isConnectable }) );
+            const DisplayNodeComponent = ({ data, isConnectable }) => React.createElement('div', { className: 'base-node', style: { borderColor: '#9013FE' } }, React.createElement('div', null, data.label), React.createElement('div', { className: 'functional-node-content' }, data.inputValue || '(Vacío)'), React.createElement(Handle, { type: "target", position: Position.Left, id: "input", className: 'node-handle', isConnectable: isConnectable }), React.createElement(Handle, { type: "source", position: Position.Right, id: "output", className: 'node-handle', isConnectable: isConnectable }));
             const DownloadNodeComponent = ({ id, data, isConnectable }) => { const { setNodes, setNodesDraggable } = useReactFlow(); const [isEditing, setIsEditing] = React.useState(false); const [filename, setFilename] = React.useState(data.filename || 'datos.txt'); const inputRef = React.useRef(null); const handleDoubleClick = () => { setIsEditing(true); setNodesDraggable(false); }; const handleSaveConfig = () => { let changed = data.filename !== filename; setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, filename: filename } } : n)); setIsEditing(false); setNodesDraggable(true); if(changed && window.recordAction) window.recordAction(); }; const handleChange = (e) => setFilename(e.target.value); const handleKeyDown = (e) => { if (e.key === 'Escape') { setFilename(data.filename || 'datos.txt'); setIsEditing(false); setNodesDraggable(true); } else if (e.key === 'Enter') { handleSaveConfig(); }}; React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }}, [isEditing]); const handleDownload = () => { const content = data.inputValue || ''; const blob = new Blob([content], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = data.filename || 'datos.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }; return React.createElement('div', { className: 'base-node', style: { borderColor: '#F5A623' }, onDoubleClick: handleDoubleClick }, React.createElement('div', null, data.label + (isEditing ? '' : `: ${data.filename}`)), isEditing ? React.createElement('input', { ref: inputRef, type: 'text', value: filename, onChange: handleChange, onKeyDown: handleKeyDown, onBlur: handleSaveConfig, className: 'node-config-input', placeholder: 'nombre_archivo.txt', onClick: (e) => e.stopPropagation() }) : React.createElement('div', { className: 'functional-node-content', style:{fontSize:'11px', display: 'none'} }, `Archivo: ${data.filename}`), React.createElement('button', { onClick: handleDownload, className: 'functional-node-button' }, 'Descargar Contenido'), React.createElement(Handle, { type: "target", position: Position.Left, id: "input", className: 'node-handle', isConnectable: isConnectable }) ); };
             const TextTransformNodeComponent = ({ data, typeLabel }) => { return React.createElement('div', { className: 'base-node', style: { borderColor: '#7ED321' } }, React.createElement('div', null, data.label || typeLabel), React.createElement('div', { className: 'functional-node-content', style: {fontSize: '11px', color: '#666'} }, `Entrada: ${(data.inputValue || '').substring(0,20)}${(data.inputValue || '').length > 20 ? '...' : ''}` ), React.createElement('div', { className: 'functional-node-content', style: {fontSize: '11px', color: '#333', fontWeight: 'bold'} }, `Salida: ${(data.outputValue || '').substring(0,20)}${(data.outputValue || '').length > 20 ? '...' : ''}` ), React.createElement(Handle, { type: "target", position: Position.Left, id: "input", className: 'node-handle' }), React.createElement(Handle, { type: "source", position: Position.Right, id: "output", className: 'node-handle' }) ); };
             const CapitalizeNodeComponent = (props) => React.createElement(TextTransformNodeComponent, { ...props, typeLabel: "Capitalizar" });
             const UppercaseNodeComponent = (props) => React.createElement(TextTransformNodeComponent, { ...props, typeLabel: "Mayúsculas" });
             const LowercaseNodeComponent = (props) => React.createElement(TextTransformNodeComponent, { ...props, typeLabel: "Minúsculas" });
+            const GeminiNodeComponent = ({ id, data, isConnectable }) => {
+                const { setNodes, setNodesDraggable } = useReactFlow();
+                const [isEditing, setIsEditing] = React.useState(false);
+                const [apiKey, setApiKey] = React.useState(data.apiKey || '');
+                const inputRef = React.useRef(null);
+                const handleDoubleClick = () => { setIsEditing(true); setNodesDraggable(false); };
+                const handleSaveConfig = () => { let changed = data.apiKey !== apiKey; setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, apiKey: apiKey } } : n)); setIsEditing(false); setNodesDraggable(true); if(changed && window.recordAction) window.recordAction(); };
+                const handleApiKeyChange = (e) => setApiKey(e.target.value);
+                const handleKeyDown = (e) => { if (e.key === 'Escape') { setApiKey(data.apiKey || ''); setIsEditing(false); setNodesDraggable(true); } else if (e.key === 'Enter') { handleSaveConfig(); }};
+                React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }}, [isEditing]);
+                const handleExecuteTask = async () => {
+                    if (!data.apiKey || !data.inputValue) { alert('Por favor, introduce una API Key (doble clic) y conecta un nodo con la tarea (prompt).'); return; }
+                    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, status: 'Procesando...', outputValue: '' } } : n));
+                    const API_KEY = data.apiKey;
+                    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+                    try {
+                        const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: data.inputValue }] }] }) });
+                        if (!response.ok) { const errorData = await response.json(); console.error('Error from Gemini API:', errorData); throw new Error(errorData.error?.message || 'Hubo un error en la respuesta de la API.'); }
+                        const responseData = await response.json();
+                        let resultText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || 'No se recibió una respuesta válida.';
+                        resultText = resultText.replace(/\$\s*\\boxed{([^}]*)}\s*\$/g, '$1').replace(/\\\[|\\\]|\$|\*|`/g, '').trim();
+                        setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, status: 'Success', outputValue: resultText } } : n));
+                        if(window.recordAction) window.recordAction();
+                    } catch (error) {
+                        console.error('Failed to execute Gemini task:', error);
+                        setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, status: `Error: ${error.message}`, outputValue: '' } } : n));
+                        if(window.recordAction) window.recordAction();
+                    }
+                };
+                const isButtonDisabled = data.status === 'Procesando...' || !data.apiKey || !data.inputValue;
+                return React.createElement('div', { className: 'base-node', style: { borderColor: '#4C8CF5' }, onDoubleClick: handleDoubleClick },
+                    React.createElement('div', null, data.label || 'Tarea Gemini'),
+                    React.createElement('div', { className: 'functional-node-content', style: {fontSize: '11px', color: '#666'} }, `Estado: ${data.status}`),
+                    isEditing ? React.createElement('input', { ref: inputRef, type: 'password', value: apiKey, onChange: handleApiKeyChange, onKeyDown: handleKeyDown, onBlur: handleSaveConfig, className: 'node-config-input', placeholder: 'Introduce tu API Key', onClick: (e) => e.stopPropagation() }) : React.createElement('div', {className: 'functional-node-content', style:{fontSize: '10px', color: '#888'}}, data.apiKey ? 'API Key guardada' : 'Doble clic para API Key'),
+                    React.createElement('button', { onClick: handleExecuteTask, className: 'functional-node-button', disabled: isButtonDisabled, style: { backgroundColor: isButtonDisabled ? '#ccc' : undefined } }, data.status === 'Procesando...' ? 'Procesando...' : 'Ejecutar Tarea'),
+                    React.createElement(Handle, { type: "target", position: Position.Left, id: "input", className: 'node-handle', isConnectable: isConnectable }),
+                    React.createElement(Handle, { type: "source", position: Position.Right, id: "output", className: 'node-handle', isConnectable: isConnectable })
+                );
+            };
+            const ScriptNodeComponent = ({ id, data, isConnectable }) => {
+                const { setNodes, setNodesDraggable } = useReactFlow();
+                const [isEditing, setIsEditing] = React.useState(false);
+                const [script, setScript] = React.useState(data.script || '');
+                const textareaRef = React.useRef(null);
+                const handleDoubleClick = () => { setIsEditing(true); setNodesDraggable(false); };
+                const handleSaveConfig = () => {
+                    let changed = data.script !== script;
+                    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, script: script } } : n));
+                    setIsEditing(false); setNodesDraggable(true);
+                    if(changed && window.recordAction) window.recordAction();
+                };
+                const handleChange = (e) => setScript(e.target.value);
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Escape') {
+                        setScript(data.script || '');
+                        setIsEditing(false);
+                        setNodesDraggable(true);
+                    }
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = e.target.selectionStart;
+                        const end = e.target.selectionEnd;
+                        const newScript = script.substring(0, start) + "\t" + script.substring(end);
+                        setScript(newScript);
+                        setTimeout(() => { e.target.selectionStart = e.target.selectionEnd = start + 1; }, 0);
+                    }
+                };
+                React.useEffect(() => { if (isEditing && textareaRef.current) { textareaRef.current.focus(); textareaRef.current.select(); } }, [isEditing]);
+                return React.createElement('div', { className: 'base-node', style: { borderColor: '#E83E8C' }, onDoubleClick: handleDoubleClick },
+                    React.createElement('div', null, data.label || 'Script JS'),
+                    isEditing ?
+                        React.createElement('textarea', {
+                            ref: textareaRef, value: script, onChange: handleChange, onKeyDown: handleKeyDown, onBlur: handleSaveConfig,
+                            className: 'node-config-input',
+                            style: { width: '90%', height: '100px', resize: 'vertical', textAlign: 'left', fontFamily: 'monospace', fontSize: '12px' },
+                            placeholder: 'return input;', onClick: (e) => e.stopPropagation()
+                        }) :
+                        React.createElement('div', { className: 'functional-node-content', style: { fontSize: '11px', color: '#666', whiteSpace: 'pre-wrap', textAlign: 'left', alignSelf: 'stretch' } }, `Salida: ${String(data.outputValue).substring(0, 50)}${String(data.outputValue).length > 50 ? '...' : ''}`),
+                    React.createElement(Handle, { type: "target", position: Position.Left, id: "input", className: 'node-handle', isConnectable: isConnectable }),
+                    React.createElement(Handle, { type: "source", position: Position.Right, id: "output", className: 'node-handle', isConnectable: isConnectable })
+                );
+            };
+            const FileAutoRunNodeComponent = ({ id, data, isConnectable }) => {
+                const { setNodes } = useReactFlow();
+                const fileInputRef = React.useRef(null);
+                const timerIdRef = React.useRef(null);
+                const handleFileChange = (event) => {
+                    const file = event.target.files[0];
+                    if (file && file.type === 'text/plain') {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const content = e.target.result;
+                            setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, filename: file.name, outputValue: content } } : n));
+                            if(window.recordAction) window.recordAction();
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        alert('Por favor, selecciona un archivo .txt');
+                    }
+                };
+                const handleIntervalChange = (event) => {
+                    const newInterval = Math.max(1, parseInt(event.target.value, 10) || 10);
+                    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, interval: newInterval } } : n));
+                };
+                const handleToggleAutoRun = () => {
+                    if (data.filename === 'No file selected' && !data.isRunning) {
+                        alert('Por favor, carga un archivo antes de iniciar.');
+                        return;
+                    }
+                    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, isRunning: !n.data.isRunning } } : n));
+                    if(window.recordAction) window.recordAction();
+                };
+                React.useEffect(() => {
+                    if (data.isRunning) {
+                        if (window.handleRunFlow) window.handleRunFlow(); 
+                        timerIdRef.current = setInterval(() => {
+                            if (window.handleRunFlow) {
+                                window.handleRunFlow();
+                            }
+                        }, data.interval * 1000);
+                    }
+                    return () => {
+                        clearInterval(timerIdRef.current);
+                    };
+                }, [data.isRunning, data.interval]);
+                React.useEffect(() => {
+                    let countdownTimer;
+                    if (data.isRunning) {
+                        setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, countdown: data.interval } } : n)); 
+                        countdownTimer = setInterval(() => {
+                            setNodes(nds => nds.map(n => {
+                                if (n.id === id && n.data.isRunning) {
+                                    const newCountdown = n.data.countdown > 1 ? n.data.countdown - 1 : n.data.interval;
+                                    return { ...n, data: { ...n.data, countdown: newCountdown } };
+                                }
+                                return n;
+                            }));
+                        }, 1000);
+                    }
+                    return () => clearInterval(countdownTimer);
+                }, [data.isRunning, data.interval, id, setNodes]);
+
+                return React.createElement('div', { className: 'base-node', style: { borderColor: '#2F855A', minWidth: '220px' } },
+                    React.createElement('div', { style: { fontWeight: 'bold' } }, data.label),
+                    React.createElement('div', { className: 'functional-node-content', style: { fontSize: '11px', fontStyle: 'italic', color: '#666', padding: '4px 0' } }, data.filename),
+                    React.createElement('input', { type: 'file', accept: '.txt', ref: fileInputRef, style: { display: 'none' }, onChange: handleFileChange }),
+                    React.createElement('button', { onClick: () => fileInputRef.current.click(), className: 'functional-node-button', style: { width: '90%', marginBottom: '8px' } }, 'Cargar Archivo (.txt)'),
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '90%', marginBottom: '8px' } },
+                        React.createElement('label', { htmlFor: `interval-${id}`, style: { fontSize: '12px' } }, 'Intervalo:'),
+                        React.createElement('input', { type: 'number', id: `interval-${id}`, value: data.interval, onChange: handleIntervalChange, disabled: data.isRunning, className: 'node-config-input', style: { width: '60px', marginTop: '0' } }),
+                        React.createElement('span', { style: { fontSize: '12px' } }, 's')
+                    ),
+                    React.createElement('button', { onClick: handleToggleAutoRun, className: 'functional-node-button', style: { width: '90%', backgroundColor: data.isRunning ? '#D32F2F' : '#38A169' } }, data.isRunning ? 'Detener Auto Run' : 'Iniciar Auto Run'),
+                    data.isRunning && React.createElement('div', { style: { fontSize: '11px', marginTop: '8px' } }, `Próxima ejecución en: ${data.countdown}s`),
+                    React.createElement('div', { style: { fontSize: '10px', color: '#777', marginTop: '8px', fontStyle: 'italic', maxWidth: '190px' } }, 'Nota: Recarga el archivo manualmente para actualizar su contenido.'),
+                    React.createElement(Handle, { type: "source", position: Position.Right, id: "output", className: 'node-handle', isConnectable: isConnectable })
+                );
+            };
             const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, markerEnd, label }) => { const { setEdges } = useReactFlow(); const edgePathStyle = { ...style }; let pathClassName = 'react-flow__edge-path'; if (data?.lineStyle === 'dashed') { edgePathStyle.strokeDasharray = '5 5'; } else if (data?.lineStyle === 'animated-dashed') { edgePathStyle.strokeDasharray = '5 5'; edgePathStyle.animation = 'dashdraw 0.7s linear infinite'; } else { delete edgePathStyle.strokeDasharray; delete edgePathStyle.animation; } const [edgePath, labelX, labelY] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition }); const [isEditing, setIsEditing] = React.useState(false); const [edgeLabel, setEdgeLabel] = React.useState(label || ''); const inputRef = React.useRef(null); const onEdgeDoubleClick = React.useCallback((event) => { event.stopPropagation(); setIsEditing(true); }, []); const onLabelChange = (evt) => setEdgeLabel(evt.target.value); const onLabelSave = () => { let changed = label !== edgeLabel; setEdges((es) => es.map((edge) => edge.id === id ? { ...edge, label: edgeLabel } : edge)); setIsEditing(false); if(changed && window.recordAction) window.recordAction(); }; const onLabelKeyDown = (event) => { if (event.key === 'Enter') { onLabelSave(); } else if (event.key === 'Escape') { setEdgeLabel(label || ''); setIsEditing(false); }}; React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }}, [isEditing]); return React.createElement(React.Fragment, null, React.createElement('path', { id: id, style: edgePathStyle, className: pathClassName, d: edgePath, markerEnd: markerEnd }), React.createElement(EdgeLabelRenderer, null, isEditing ? React.createElement('div', { style: { position: 'absolute', transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`, pointerEvents: 'all' }, className: 'nodrag nopan' }, React.createElement('input', { ref: inputRef, value: edgeLabel, onChange: onLabelChange, onBlur: onLabelSave, onKeyDown: onLabelKeyDown, className: 'edge-label-input' })) : (label || edgeLabel) && React.createElement('div', { style: { position: 'absolute', transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`, background: 'var(--edge-label-bg)', padding: '2px 5px', borderRadius: '3px', fontSize: '10px', color: 'var(--edge-label-color)', pointerEvents: 'all' }, className: 'nodrag nopan', onDoubleClick: onEdgeDoubleClick }, label || edgeLabel) ) ); };
             const edgeTypes = { customEdge: CustomEdge };
             const FloatingHeaderContent = ({ onUndo, onRedo, canUndo, canRedo }) => { const undoIcon = React.createElement('svg', { viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2"}, React.createElement('path', {d:"M21 13H5.83l3.58-3.59L8 8l-6 6 6 6 1.41-1.41L5.83 15H21v-2z"})); const redoIcon = React.createElement('svg', { viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2"}, React.createElement('path', {d:"M3 13h15.17l-3.58-3.59L16 8l6 6-6 6-1.41-1.41L15.17 15H3v-2z"})); return React.createElement(React.Fragment, null, React.createElement(Panel, { position: 'top-left', className: 'logo-panel' }, 'XOCONODO'), React.createElement(Panel, { position: 'top-right', className: 'header-actions-panel' }, React.createElement('button', { onClick: onUndo, disabled: !canUndo, className: 'sidebar-button', title: 'Deshacer (Ctrl+Z)' }, undoIcon, 'Deshacer'), React.createElement('button', { onClick: onRedo, disabled: !canRedo, className: 'sidebar-button', title: 'Rehacer (Ctrl+Y)' }, redoIcon, 'Rehacer') ) ); };
-            const LeftSidebar = ({ onAddNode, onAddImage, onAddConcatenateNode, onAddResultNode, onAddDownloadNode, onAddCapitalizeNode, onAddUppercaseNode, onAddLowercaseNode, autoLayout, onToggleAutoLayout, onRecenter, onImport, onExport, onShare }) => {  const recenterIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"}));  const importIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"}));  const exportIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M12 15v8m-4-4l4 4 4-4m4-13H8a4 4 0 00-4 4v6"}));  const shareIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('circle',{cx:"18",cy:"5",r:"3"}), React.createElement('circle',{cx:"6",cy:"12",r:"3"}), React.createElement('circle',{cx:"18",cy:"19",r:"3"}), React.createElement('line',{x1:"8.59",y1:"13.51",x2:"15.42",y2:"17.49"}), React.createElement('line',{x1:"15.41",y1:"6.51",x2:"8.59",y2:"10.49"}));  const imageIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"3",y:"3",width:"18",height:"18",rx:"2",ry:"2"}), React.createElement('circle',{cx:"8.5",cy:"8.5",r:"1.5"}), React.createElement('polyline',{points:"21 15 16 10 5 21"}));  const concatIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path',{d:"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"}), React.createElement('path',{d:"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"}));  const resultIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"3",y:"3",width:"18",height:"18",rx:"2"}), React.createElement('path',{d:"M8 12h8M8 16h4M8 8h8"}));  const downloadIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path',{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"}), React.createElement('polyline',{points:"7 10 12 15 17 10"}), React.createElement('line',{x1:"12",y1:"15",x2:"12",y2:"3"})); const textIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round"}, React.createElement('path', {d:"M17 6.1H3"}), React.createElement('path', {d:"M17 12.1H3"}), React.createElement('path', {d:"M10 18.1H3"}), React.createElement('path', {d:"M14 6.1L14 18.1"})); return React.createElement(Panel, { position: 'top-left', className: 'left-sidebar-panel', style: {marginTop: '70px'} },  React.createElement('button', { onClick: onAddNode, className: 'sidebar-button primary' }, React.createElement('span', { style: { fontSize: '18px', lineHeight: '1' } }, '+ '), ' Add Node'),  React.createElement('button', { onClick: onAddImage, className: 'sidebar-button' }, imageIcon, ' Add Image'),  React.createElement('button', { onClick: onAddConcatenateNode, className: 'sidebar-button' }, concatIcon, ' Add Concatenate'),  React.createElement('button', { onClick: onAddResultNode, className: 'sidebar-button' }, resultIcon, ' Add Result'),  React.createElement('button', { onClick: onAddDownloadNode, className: 'sidebar-button' }, downloadIcon, ' Add Download'), React.createElement('button', { onClick: onAddCapitalizeNode, className: 'sidebar-button' }, textIcon, ' Capitalizar'), React.createElement('button', { onClick: onAddUppercaseNode, className: 'sidebar-button' }, textIcon, ' Mayúsculas'), React.createElement('button', { onClick: onAddLowercaseNode, className: 'sidebar-button' }, textIcon, ' Minúsculas'), React.createElement('div', { className: 'sidebar-button auto-layout' }, React.createElement('label', { className: 'switch' }, React.createElement('input', { type: 'checkbox', checked: autoLayout, onChange: onToggleAutoLayout }), React.createElement('span', { className: 'slider' })), 'Rejilla'),  React.createElement('button', { onClick: onRecenter, className: 'sidebar-button' }, recenterIcon, ' Recenter'),  React.createElement('button', { onClick: onImport, className: 'sidebar-button' }, importIcon, ' Import'),  React.createElement('button', { onClick: onExport, className: 'sidebar-button' }, exportIcon, ' Export'),  React.createElement('button', { onClick: onShare, className: 'sidebar-button' }, shareIcon, ' Share')  ); };
-            const ToolsToolbar = ({ selectedElement, onSelectShape, selectedShape, onSelectColor, selectedColor, onSelectBorderColor, selectedBorderColor, onSelectBorderStyle, selectedBorderStyle, onSelectEdgeType, selectedEdgeType, onSelectEdgeLineStyle, selectedEdgeLineStyle, onDeleteSelectedElements, onDuplicateSelected }) => { const shapes = [ { type: 'rect', iconClass: 'rect' }, { type: 'circle', iconClass: 'circle' }, { type: 'diamond', iconClass: 'diamond' }]; const colors = ['#ffffff', '#f0f0f0', '#d1ecff', '#d6f5d6', '#fff8c5', '#ffe6e6']; const borderColors = ['#FF0066', '#333333', '#3b82f6', '#16a34a', '#f59e0b', '#ef4444']; const borderStyles = ['solid', 'dashed', 'dotted', 'none']; const edgeTypesList = [ { type: 'customEdge', name: 'Bezier (Edit)' }, { type: 'smoothstep', name: 'SmoothStep' }, { type: 'step', name: 'Step' }, { type: 'straight', name: 'Straight' } ]; const edgeLineStylesList = [ { type: 'solid', name: 'Solid' }, { type: 'dashed', name: 'Dashed' }, { type: 'animated-dashed', name: 'Animated Dashed' }]; const trashIcon = React.createElement('svg', {width:"18",height:"18",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"})); const duplicateIcon = React.createElement('svg', {width:"18",height:"18",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"8",y:"8",width:"12",height:"12",rx:"2",ry:"2"}), React.createElement('path',{d:"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"}));  const isTextNodeSelected = selectedElement && selectedElement.isNode && selectedElement.type === 'customNode';  const isImageNodeSelected = selectedElement && selectedElement.isNode && selectedElement.type === 'imageNode';  const isEdgeSelected = selectedElement && selectedElement.isEdge;  const nodeToolsDisabled = isEdgeSelected || isImageNodeSelected || (selectedElement && selectedElement.isNode && (selectedElement.type === 'concatenateNode' || selectedElement.type === 'resultNode' || selectedElement.type === 'downloadNode' || selectedElement.type === 'capitalizeNode' || selectedElement.type === 'uppercaseNode' || selectedElement.type === 'lowercaseNode'));  const edgeToolsDisabled = selectedElement && selectedElement.isNode; const canDuplicate = selectedElement && (selectedElement.isNode || (selectedElement.multiple && selectedElement.isNode));  const canDelete = selectedElement && (selectedElement.isNode || selectedElement.isEdge || selectedElement.multiple);  return React.createElement(Panel, { position: 'top-center', className: 'tools-toolbar-panel', style:{marginTop: '10px'} } , React.createElement('div', {className: 'toolbar-group'}, React.createElement('span', {className: 'toolbar-group-label'}, 'Node (Text):'), shapes.map(s => React.createElement('div', { key: s.type, className: `tool-button ${selectedShape === s.type && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectShape(s.type), title: `Forma: ${s.type}`, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' } }, React.createElement('div', { className: `tool-icon ${s.iconClass}` }))), React.createElement('div', { className: 'tools-toolbar-divider' }), colors.map(c => React.createElement('div', { key: `bg-${c}`, className: `tool-button ${selectedColor === c && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectColor(c), title: c, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' }  }, React.createElement('div', { className: 'tool-color', style: { backgroundColor: c } }))), React.createElement('div', { className: 'tools-toolbar-divider' }), borderColors.map(bc => React.createElement('div', { key: `bcol-${bc}`, className: `tool-button ${selectedBorderColor === bc && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectBorderColor(bc), title: bc, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' }  }, React.createElement('div', { className: 'tool-color', style: { backgroundColor: bc } }))), React.createElement('div', { className: 'tools-toolbar-divider' }), borderStyles.map(bs => React.createElement('div', { key: bs, className: `tool-button ${selectedBorderStyle === bs && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectBorderStyle(bs), title: bs, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' }  }, React.createElement('div', { className: 'tool-icon', style: { border: `2px ${bs} #333`, width:'20px', height:'20px', borderRadius: bs === 'dotted' ? '50%' : '3px' } }))) ), React.createElement('div', {className: 'toolbar-group'}, React.createElement('span', {className: 'toolbar-group-label'}, 'Edge Type:'), edgeTypesList.map(et => React.createElement('button', { key: et.type, className: `tool-button ${selectedEdgeType === et.type && (isEdgeSelected || !selectedElement || selectedElement.multiple) ? 'selected' : ''}`, onClick: () => onSelectEdgeType(et.type), title: `Tipo: ${et.name}`, style: { opacity: edgeToolsDisabled ? 0.5 : 1, pointerEvents: edgeToolsDisabled ? 'none' : 'auto' }  }, et.name)) ), React.createElement('div', {className: 'toolbar-group'}, React.createElement('span', {className: 'toolbar-group-label'}, 'Line Style:'), edgeLineStylesList.map(els => React.createElement('button', { key: els.type, className: `tool-button ${selectedEdgeLineStyle === els.type && (isEdgeSelected || !selectedElement || selectedElement.multiple) ? 'selected' : ''}`, onClick: () => onSelectEdgeLineStyle(els.type), title: `Línea: ${els.name}`, style: { opacity: edgeToolsDisabled ? 0.5 : 1, pointerEvents: edgeToolsDisabled ? 'none' : 'auto' }  }, els.name)) ), React.createElement('div', {className: 'toolbar-group'}, React.createElement('div', { className: 'tool-button', onClick: onDeleteSelectedElements, title: "Eliminar (Supr)", disabled: !canDelete }, React.createElement('div', { className: 'tool-icon trash' }, trashIcon)), React.createElement('div', { className: 'tool-button', onClick: onDuplicateSelected, title: "Duplicar (Ctrl+D)", disabled: !canDuplicate }, duplicateIcon) ) ); };
+            const LeftSidebar = ({ onAddNode, onAddImage, onAddConcatenateNode, onAddResultNode, onAddDisplayNode, onAddDownloadNode, onAddCapitalizeNode, onAddUppercaseNode, onAddLowercaseNode, onAddGeminiNode, onAddScriptNode, onAddFileAutoRunNode, autoLayout, onToggleAutoLayout, onRecenter, onImport, onExport, onShare, onRunFlow }) => {  const recenterIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"}));  const importIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"}));  const exportIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M12 15v8m-4-4l4 4 4-4m4-13H8a4 4 0 00-4 4v6"}));  const shareIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('circle',{cx:"18",cy:"5",r:"3"}), React.createElement('circle',{cx:"6",cy:"12",r:"3"}), React.createElement('circle',{cx:"18",cy:"19",r:"3"}), React.createElement('line',{x1:"8.59",y1:"13.51",x2:"15.42",y2:"17.49"}), React.createElement('line',{x1:"15.41",y1:"6.51",x2:"8.59",y2:"10.49"}));  const imageIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"3",y:"3",width:"18",height:"18",rx:"2",ry:"2"}), React.createElement('circle',{cx:"8.5",cy:"8.5",r:"1.5"}), React.createElement('polyline',{points:"21 15 16 10 5 21"}));  const concatIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path',{d:"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"}), React.createElement('path',{d:"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"}));  const resultIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"3",y:"3",width:"18",height:"18",rx:"2"}), React.createElement('path',{d:"M8 12h8M8 16h4M8 8h8"}));  const displayIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2"}, React.createElement('path',{d:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"})); const downloadIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path',{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"}), React.createElement('polyline',{points:"7 10 12 15 17 10"}), React.createElement('line',{x1:"12",y1:"15",x2:"12",y2:"3"})); const textIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round"}, React.createElement('path', {d:"M17 6.1H3"}), React.createElement('path', {d:"M17 12.1H3"}), React.createElement('path', {d:"M10 18.1H3"}), React.createElement('path', {d:"M14 6.1L14 18.1"})); const geminiIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round"}, React.createElement('path', {d:"M12 3L10.5 8.5L5 10L10.5 11.5L12 17L13.5 11.5L19 10L13.5 8.5L12 3Z"}), React.createElement('path', {d:"M5 3L6 6"}), React.createElement('path', {d:"M19 3L18 6"}), React.createElement('path', {d:"M19 17L18 20"}), React.createElement('path', {d:"M5 17L6 20"})); const scriptIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round"}, React.createElement('polyline',{points:"16 18 22 12 16 6"}), React.createElement('polyline',{points:"8 6 2 12 8 18"})); const playIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2"}, React.createElement('path', {d:"M5 3l14 9-14 9V3z"})); const autoRunIcon = React.createElement('svg', {viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"}), React.createElement('path', {d:'M4 4.5V8h3.5'})); return React.createElement(Panel, { position: 'top-left', className: 'left-sidebar-panel', style: {marginTop: '70px'} },  React.createElement('button', { onClick: onRunFlow, className: 'sidebar-button primary' }, playIcon, ' Ejecutar Flujo'), React.createElement('button', { onClick: onAddNode, className: 'sidebar-button primary' }, React.createElement('span', { style: { fontSize: '18px', lineHeight: '1' } }, '+ '), ' Add Node'),  React.createElement('button', { onClick: onAddFileAutoRunNode, className: 'sidebar-button' }, autoRunIcon, ' Add Auto Run'), React.createElement('button', { onClick: onAddImage, className: 'sidebar-button' }, imageIcon, ' Add Image'),  React.createElement('button', { onClick: onAddConcatenateNode, className: 'sidebar-button' }, concatIcon, ' Add Concatenate'),  React.createElement('button', { onClick: onAddResultNode, className: 'sidebar-button' }, resultIcon, ' Add Result'),  React.createElement('button', { onClick: onAddDisplayNode, className: 'sidebar-button' }, displayIcon, ' Add Display'), React.createElement('button', { onClick: onAddDownloadNode, className: 'sidebar-button' }, downloadIcon, ' Add Download'), React.createElement('button', { onClick: onAddGeminiNode, className: 'sidebar-button' }, geminiIcon, ' Add Gemini Task'), React.createElement('button', { onClick: onAddScriptNode, className: 'sidebar-button' }, scriptIcon, ' Add Script'), React.createElement('button', { onClick: onAddCapitalizeNode, className: 'sidebar-button' }, textIcon, ' Capitalizar'), React.createElement('button', { onClick: onAddUppercaseNode, className: 'sidebar-button' }, textIcon, ' Mayúsculas'), React.createElement('button', { onClick: onAddLowercaseNode, className: 'sidebar-button' }, textIcon, ' Minúsculas'), React.createElement('div', { className: 'sidebar-button auto-layout' }, React.createElement('label', { className: 'switch' }, React.createElement('input', { type: 'checkbox', checked: autoLayout, onChange: onToggleAutoLayout }), React.createElement('span', { className: 'slider' })), 'Rejilla'),  React.createElement('button', { onClick: onRecenter, className: 'sidebar-button' }, recenterIcon, ' Recenter'),  React.createElement('button', { onClick: onImport, className: 'sidebar-button' }, importIcon, ' Import'),  React.createElement('button', { onClick: onExport, className: 'sidebar-button' }, exportIcon, ' Export'),  React.createElement('button', { onClick: onShare, className: 'sidebar-button' }, shareIcon, ' Share')  ); };
+            const ToolsToolbar = ({ selectedElement, onSelectShape, selectedShape, onSelectColor, selectedColor, onSelectBorderColor, selectedBorderColor, onSelectBorderStyle, selectedBorderStyle, onSelectEdgeType, selectedEdgeType, onSelectEdgeLineStyle, selectedEdgeLineStyle, onDeleteSelectedElements, onDuplicateSelected }) => { const shapes = [ { type: 'rect', iconClass: 'rect' }, { type: 'circle', iconClass: 'circle' }, { type: 'diamond', iconClass: 'diamond' }]; const colors = ['#ffffff', '#f0f0f0', '#d1ecff', '#d6f5d6', '#fff8c5', '#ffe6e6']; const borderColors = ['#FF0066', '#333333', '#3b82f6', '#16a34a', '#f59e0b', '#ef4444']; const borderStyles = ['solid', 'dashed', 'dotted', 'none']; const edgeTypesList = [ { type: 'customEdge', name: 'Bezier (Edit)' }, { type: 'smoothstep', name: 'SmoothStep' }, { type: 'step', name: 'Step' }, { type: 'straight', name: 'Straight' } ]; const edgeLineStylesList = [ { type: 'solid', name: 'Solid' }, { type: 'dashed', name: 'Dashed' }, { type: 'animated-dashed', name: 'Animated Dashed' }]; const trashIcon = React.createElement('svg', {width:"18",height:"18",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"})); const duplicateIcon = React.createElement('svg', {width:"18",height:"18",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"8",y:"8",width:"12",height:"12",rx:"2",ry:"2"}), React.createElement('path',{d:"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"}));  const isTextNodeSelected = selectedElement && selectedElement.isNode && selectedElement.type === 'customNode';  const isImageNodeSelected = selectedElement && selectedElement.isNode && selectedElement.type === 'imageNode';  const isEdgeSelected = selectedElement && selectedElement.isEdge;  const nodeToolsDisabled = isEdgeSelected || isImageNodeSelected || (selectedElement && selectedElement.isNode && !isTextNodeSelected);  const edgeToolsDisabled = selectedElement && selectedElement.isNode; const canDuplicate = selectedElement && (selectedElement.isNode || (selectedElement.multiple && selectedElement.isNode));  const canDelete = selectedElement && (selectedElement.isNode || selectedElement.isEdge || selectedElement.multiple);  return React.createElement(Panel, { position: 'top-center', className: 'tools-toolbar-panel', style:{marginTop: '10px'} } , React.createElement('div', {className: 'toolbar-group'}, React.createElement('span', {className: 'toolbar-group-label'}, 'Node (Text):'), shapes.map(s => React.createElement('div', { key: s.type, className: `tool-button ${selectedShape === s.type && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectShape(s.type), title: `Forma: ${s.type}`, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' } }, React.createElement('div', { className: `tool-icon ${s.iconClass}` }))), React.createElement('div', { className: 'tools-toolbar-divider' }), colors.map(c => React.createElement('div', { key: `bg-${c}`, className: `tool-button ${selectedColor === c && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectColor(c), title: c, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' }  }, React.createElement('div', { className: 'tool-color', style: { backgroundColor: c } }))), React.createElement('div', { className: 'tools-toolbar-divider' }), borderColors.map(bc => React.createElement('div', { key: `bcol-${bc}`, className: `tool-button ${selectedBorderColor === bc && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectBorderColor(bc), title: bc, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' }  }, React.createElement('div', { className: 'tool-color', style: { backgroundColor: bc } }))), React.createElement('div', { className: 'tools-toolbar-divider' }), borderStyles.map(bs => React.createElement('div', { key: bs, className: `tool-button ${selectedBorderStyle === bs && isTextNodeSelected ? 'selected' : ''}`, onClick: () => onSelectBorderStyle(bs), title: bs, style: { opacity: nodeToolsDisabled ? 0.5 : 1, pointerEvents: nodeToolsDisabled ? 'none' : 'auto' }  }, React.createElement('div', { className: 'tool-icon', style: { border: `2px ${bs} #333`, width:'20px', height:'20px', borderRadius: bs === 'dotted' ? '50%' : '3px' } }))) ), React.createElement('div', {className: 'toolbar-group'}, React.createElement('span', {className: 'toolbar-group-label'}, 'Edge Type:'), edgeTypesList.map(et => React.createElement('button', { key: et.type, className: `tool-button ${selectedEdgeType === et.type && (isEdgeSelected || !selectedElement || selectedElement.multiple) ? 'selected' : ''}`, onClick: () => onSelectEdgeType(et.type), title: `Tipo: ${et.name}`, style: { opacity: edgeToolsDisabled ? 0.5 : 1, pointerEvents: edgeToolsDisabled ? 'none' : 'auto' }  }, et.name)) ), React.createElement('div', {className: 'toolbar-group'}, React.createElement('span', {className: 'toolbar-group-label'}, 'Line Style:'), edgeLineStylesList.map(els => React.createElement('button', { key: els.type, className: `tool-button ${selectedEdgeLineStyle === els.type && (isEdgeSelected || !selectedElement || selectedElement.multiple) ? 'selected' : ''}`, onClick: () => onSelectEdgeLineStyle(els.type), title: `Línea: ${els.name}`, style: { opacity: edgeToolsDisabled ? 0.5 : 1, pointerEvents: edgeToolsDisabled ? 'none' : 'auto' }  }, els.name)) ), React.createElement('div', {className: 'toolbar-group'}, React.createElement('div', { className: 'tool-button', onClick: onDeleteSelectedElements, title: "Eliminar (Supr)", disabled: !canDelete }, React.createElement('div', { className: 'tool-icon trash' }, trashIcon)), React.createElement('div', { className: 'tool-button', onClick: onDuplicateSelected, title: "Duplicar (Ctrl+D)", disabled: !canDuplicate }, duplicateIcon) ) ); };
             const ZoomControls = ({ onZoomIn, onZoomOut, onFitView, locked, onToggleLock }) => { const fitViewIcon = React.createElement('svg', {width:"14",height:"14",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('path', {d:"M15 3h6v6M9 3H3v6M15 21h6v-6M9 21H3v-6"})); const lockIcon = React.createElement('svg', {width:"14",height:"14",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"3",y:"11",width:"18",height:"11",rx:"2",ry:"2"}), React.createElement('path',{d:"M7 11V7a5 5 0 0110 0v4"})); const unlockIcon = React.createElement('svg', {width:"14",height:"14",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2"}, React.createElement('rect',{x:"3",y:"11",width:"18",height:"11",rx:"2",ry:"2"}), React.createElement('path',{d:"M7 11V7a5 5 0 019.9-1M15 11V7a3 3 0 00-6 0"})); return React.createElement(Panel, { position: 'bottom-left', className: 'zoom-controls-panel' }, React.createElement('div', { onClick: onZoomIn, className: 'zoom-button', title:"Acercar" }, '+'), React.createElement('div', { onClick: onZoomOut, className: 'zoom-button', title:"Alejar" }, '-'), React.createElement('div', { onClick: onFitView, className: 'zoom-button', title:"Ajustar vista" }, fitViewIcon), React.createElement('div', { onClick: onToggleLock, className: `zoom-button ${locked ? 'active' : ''}`, title: locked ? "Desbloquear" : "Bloquear" }, locked ? lockIcon : unlockIcon) ); };
             const getEdgeStyleObject = (lineStyleType, strokeColor) => { const baseStyle = { stroke: strokeColor || '#FF0066', strokeWidth: 2 }; if (lineStyleType === 'dashed') { return { ...baseStyle, strokeDasharray: '5 5', animation: 'none' }; } else if (lineStyleType === 'animated-dashed') { return { ...baseStyle, strokeDasharray: '5 5', animation: 'dashdraw 0.7s linear infinite' }; } return { ...baseStyle, strokeDasharray: 'none', animation: 'none' }; };
-            
-            // --- DrawingToolbar con botón Ojo y slider de Opacidad ---
-            const DrawingToolbar = ({ 
-                isDrawingMode, onToggleDrawingMode, 
-                drawingTool, onSetDrawingTool, 
-                drawingColor, onSetDrawingColor, 
-                drawingLineWidth, onSetDrawingLineWidth, 
-                onClearDrawing, 
-                isDrawingLayerVisible, onToggleDrawingLayerVisibility,
-                drawingOpacity, onSetDrawingOpacity // Nuevas props para opacidad
-            }) => {
-                const penIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none",stroke:"currentColor",strokeWidth:"2", width:16, height:16}, React.createElement('path', {d:"M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"}));
-                const eraserIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none",stroke:"currentColor",strokeWidth:"2", width:16, height:16}, React.createElement('path', {d:"M20.49 2.51a4.243 4.243 0 0 0-6 0L2 15l-2 7 7-2 12.51-12.49a4.243 4.243 0 0 0 0-6zM14 7l3 3"}));
-                const clearIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none",stroke:"currentColor",strokeWidth:"2", width:16, height:16}, React.createElement('path', {d:"M2.504 7.514C3.338 4.494 6.356 2.33 9.735 2.051c3.48-.29 6.775 1.378 8.52 4.26.803 1.332.975 2.91.628 4.428-.79 3.43-3.957 5.694-7.484 5.724-3.251.028-6.135-1.982-7.484-4.995M20.998 10.5c.123 1.083-.193 2.204-.836 3.188"}), React.createElement('path', {d:"m13 13-6-6"}), React.createElement('path', {d:"m7 13 6-6"}));
-                const eyeOpenIcon = React.createElement('svg', { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", width:16, height:16 }, React.createElement('path', { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }), React.createElement('circle', { cx: "12", cy: "12", r: "3" }));
-                const eyeClosedIcon = React.createElement('svg', { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", width:16, height:16 }, React.createElement('path', { d: "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 2c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" }), React.createElement('line', { x1: "1", y1: "1", x2: "23", y2: "23" }));
-
-                return React.createElement('div', {className: 'drawing-toolbar-panel' }, 
-                    React.createElement('div', {className: 'drawing-tool-group'}, 
-                        React.createElement('button', { onClick: onToggleDrawingMode, className: `sidebar-button ${isDrawingMode ? 'primary' : ''}`, title: isDrawingMode ? "Desactivar Dibujo" : "Activar Dibujo" }, isDrawingMode ? "Dibujo ON" : "Dibujo OFF"),
-                        React.createElement('button', { 
-                            onClick: onToggleDrawingLayerVisibility, 
-                            className: `tool-button ${isDrawingLayerVisible ? 'selected' : ''}`, 
-                            title: isDrawingLayerVisible ? "Ocultar Capa Dibujo" : "Mostrar Capa Dibujo",
-                            style: { marginLeft: '4px'}
-                        }, isDrawingLayerVisible ? eyeOpenIcon : eyeClosedIcon)
-                    ), 
-                    isDrawingMode && React.createElement(React.Fragment, null, 
-                        React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('button', { onClick: () => onSetDrawingTool('pen'), className: `tool-button ${drawingTool === 'pen' ? 'selected' : ''}`, title:"Lápiz" }, penIcon), React.createElement('button', { onClick: () => onSetDrawingTool('eraser'), className: `tool-button ${drawingTool === 'eraser' ? 'selected' : ''}`, title:"Borrador" }, eraserIcon) ), 
-                        React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('label', {htmlFor:'drawing-color'}, "Color:"), React.createElement('input', { type: 'color', id:'drawing-color', value: drawingColor, onChange: (e) => onSetDrawingColor(e.target.value) }) ), 
-                        React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('label', {htmlFor:'drawing-linewidth'}, "Grosor:"), React.createElement('input', { type: 'range', id:'drawing-linewidth', min: '1', max: '50', value: drawingLineWidth, onChange: (e) => onSetDrawingLineWidth(e.target.value) }), React.createElement('span', {style:{fontSize:'11px', marginLeft:'4px', width: '20px'}}, drawingLineWidth) ),
-                        React.createElement('div', {className: 'drawing-tool-group'},
-                            React.createElement('label', {htmlFor:'drawing-opacity'}, "Opacidad:"),
-                            React.createElement('input', { type: 'range', id:'drawing-opacity', min: '0', max: '1', step: '0.01', value: drawingOpacity, onChange: (e) => onSetDrawingOpacity(parseFloat(e.target.value)) }),
-                            React.createElement('span', {style:{fontSize:'11px', marginLeft:'4px', width: '25px'}}, drawingOpacity.toFixed(2))
-                        ),
-                        React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('button', { onClick: onClearDrawing, className: 'sidebar-button', title:"Limpiar Dibujo" }, clearIcon, "Limpiar") ) 
-                    )
-                );
-            };
+            const DrawingToolbar = ({ isDrawingMode, onToggleDrawingMode, drawingTool, onSetDrawingTool, drawingColor, onSetDrawingColor, drawingLineWidth, onSetDrawingLineWidth, onClearDrawing, isDrawingLayerVisible, onToggleDrawingLayerVisibility, drawingOpacity, onSetDrawingOpacity }) => { const penIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none",stroke:"currentColor",strokeWidth:"2", width:16, height:16}, React.createElement('path', {d:"M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"})); const eraserIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none",stroke:"currentColor",strokeWidth:"2", width:16, height:16}, React.createElement('path', {d:"M20.49 2.51a4.243 4.243 0 0 0-6 0L2 15l-2 7 7-2 12.51-12.49a4.243 4.243 0 0 0 0-6zM14 7l3 3"})); const clearIcon = React.createElement('svg', {viewBox:"0 0 24 24", fill:"none",stroke:"currentColor",strokeWidth:"2", width:16, height:16}, React.createElement('path', {d:"M2.504 7.514C3.338 4.494 6.356 2.33 9.735 2.051c3.48-.29 6.775 1.378 8.52 4.26.803 1.332.975 2.91.628 4.428-.79 3.43-3.957 5.694-7.484 5.724-3.251.028-6.135-1.982-7.484-4.995M20.998 10.5c.123 1.083-.193 2.204-.836 3.188"}), React.createElement('path', {d:"m13 13-6-6"}), React.createElement('path', {d:"m7 13 6-6"})); const eyeOpenIcon = React.createElement('svg', { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", width:16, height:16 }, React.createElement('path', { d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" }), React.createElement('circle', { cx: "12", cy: "12", r: "3" })); const eyeClosedIcon = React.createElement('svg', { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", width:16, height:16 }, React.createElement('path', { d: "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 2c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" }), React.createElement('line', { x1: "1", y1: "1", x2: "23", y2: "23" })); return React.createElement('div', {className: 'drawing-toolbar-panel' }, React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('button', { onClick: onToggleDrawingMode, className: `sidebar-button ${isDrawingMode ? 'primary' : ''}`, title: isDrawingMode ? "Desactivar Dibujo" : "Activar Dibujo" }, isDrawingMode ? "Dibujo ON" : "Dibujo OFF"), React.createElement('button', { onClick: onToggleDrawingLayerVisibility, className: `tool-button ${isDrawingLayerVisible ? 'selected' : ''}`, title: isDrawingLayerVisible ? "Ocultar Capa Dibujo" : "Mostrar Capa Dibujo", style: { marginLeft: '4px'} }, isDrawingLayerVisible ? eyeOpenIcon : eyeClosedIcon)), isDrawingMode && React.createElement(React.Fragment, null, React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('button', { onClick: () => onSetDrawingTool('pen'), className: `tool-button ${drawingTool === 'pen' ? 'selected' : ''}`, title:"Lápiz" }, penIcon), React.createElement('button', { onClick: () => onSetDrawingTool('eraser'), className: `tool-button ${drawingTool === 'eraser' ? 'selected' : ''}`, title:"Borrador" }, eraserIcon) ), React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('label', {htmlFor:'drawing-color'}, "Color:"), React.createElement('input', { type: 'color', id:'drawing-color', value: drawingColor, onChange: (e) => onSetDrawingColor(e.target.value) }) ), React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('label', {htmlFor:'drawing-linewidth'}, "Grosor:"), React.createElement('input', { type: 'range', id:'drawing-linewidth', min: '1', max: '50', value: drawingLineWidth, onChange: (e) => onSetDrawingLineWidth(e.target.value) }), React.createElement('span', {style:{fontSize:'11px', marginLeft:'4px', width: '20px'}}, drawingLineWidth) ), React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('label', {htmlFor:'drawing-opacity'}, "Opacidad:"), React.createElement('input', { type: 'range', id:'drawing-opacity', min: '0', max: '1', step: '0.01', value: drawingOpacity, onChange: (e) => onSetDrawingOpacity(parseFloat(e.target.value)) }), React.createElement('span', {style:{fontSize:'11px', marginLeft:'4px', width: '25px'}}, drawingOpacity.toFixed(2)) ), React.createElement('div', {className: 'drawing-tool-group'}, React.createElement('button', { onClick: onClearDrawing, className: 'sidebar-button', title:"Limpiar Dibujo" }, clearIcon, "Limpiar") ) ) ); };
             
             const FlowApp = () => {
                 const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
                 const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(initialEdges);
-                const { project, getViewport, setViewport, zoomIn, zoomOut, fitView, getNodes, getEdges, deleteElements: rfDeleteElementsHook, getNode, getEdge, setCenter } = useReactFlow();
-                
+                const { getViewport, setViewport, zoomIn, zoomOut, fitView, getNodes, getEdges, deleteElements: rfDeleteElementsHook, getNode } = useReactFlow();
                 const [isDrawingMode, setIsDrawingMode] = React.useState(false);
                 const [isDrawingLayerVisible, setIsDrawingLayerVisible] = React.useState(true);
                 const [drawingTool, setDrawingTool] = React.useState('pen');
                 const [drawingColor, setDrawingColor] = React.useState('#FF0066');
                 const [drawingLineWidth, setDrawingLineWidth] = React.useState(3);
-                const [drawingOpacity, setDrawingOpacity] = React.useState(1); // Nuevo estado para opacidad
-
+                const [drawingOpacity, setDrawingOpacity] = React.useState(1);
                 const mainContentRef = React.useRef(null);
                 const canvasRef = React.useRef(null);
                 const contextRef = React.useRef(null);
                 const isPaintingRef = React.useRef(false);
-
-                const currentDrawingColorRef = React.useRef(drawingColor);
-                const currentDrawingLineWidthRef = React.useRef(drawingLineWidth);
-                const currentDrawingOpacityRef = React.useRef(drawingOpacity); // Ref para opacidad
-                React.useEffect(() => { currentDrawingColorRef.current = drawingColor; }, [drawingColor]);
-                React.useEffect(() => { currentDrawingLineWidthRef.current = drawingLineWidth; }, [drawingLineWidth]);
-                React.useEffect(() => { currentDrawingOpacityRef.current = drawingOpacity; }, [drawingOpacity]);
-
-
-                React.useEffect(() => {
-                    const canvasElement = canvasRef.current;
-                    const mainContentElement = mainContentRef.current;
-                    if (!canvasElement || !mainContentElement) return;
-                    let { width, height } = mainContentElement.getBoundingClientRect();
-                    width = Math.max(width, 1); 
-                    height = Math.max(height, 1);
-                    canvasElement.width = width;
-                    canvasElement.height = height;
-                    const ctx = canvasElement.getContext('2d');
-                    if (!ctx) { console.error("Failed to get 2D context."); return; }
-                    contextRef.current = ctx;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.strokeStyle = currentDrawingColorRef.current;
-                    ctx.lineWidth = currentDrawingLineWidthRef.current;
-                    ctx.globalAlpha = currentDrawingOpacityRef.current; // Aplicar opacidad inicial
-
-                    const resizeObs = new ResizeObserver(entries => {
-                        for (let entry of entries) {
-                            if (canvasRef.current && contextRef.current) {
-                                const newRect = entry.contentRect;
-                                const newWidth = Math.max(newRect.width, 1);
-                                const newHeight = Math.max(newRect.height, 1);
-                                const tempCanvas = document.createElement('canvas');
-                                const tempCtx = tempCanvas.getContext('2d');
-                                const oldCanvasWidth = canvasRef.current.width;
-                                const oldCanvasHeight = canvasRef.current.height;
-                                if (oldCanvasWidth > 0 && oldCanvasHeight > 0) {
-                                    tempCanvas.width = oldCanvasWidth;
-                                    tempCanvas.height = oldCanvasHeight;
-                                    tempCtx.drawImage(canvasRef.current, 0, 0);
-                                }
-                                canvasRef.current.width = newWidth;
-                                canvasRef.current.height = newHeight;
-                                contextRef.current.lineCap = 'round';
-                                contextRef.current.lineJoin = 'round';
-                                contextRef.current.strokeStyle = currentDrawingColorRef.current;
-                                contextRef.current.lineWidth = currentDrawingLineWidthRef.current;
-                                contextRef.current.globalAlpha = currentDrawingOpacityRef.current; // Reaplicar opacidad
-                                if (oldCanvasWidth > 0 && oldCanvasHeight > 0) {
-                                    contextRef.current.drawImage(tempCanvas, 0, 0);
-                                }
-                            }
-                        }
-                    });
-                    if (mainContentElement) resizeObs.observe(mainContentElement);
-                    return () => {
-                        if (mainContentElement) resizeObs.unobserve(mainContentElement);
-                    };
-                }, []); 
-
-                const getMousePos = React.useCallback((event) => {
-                    const canvas = canvasRef.current;
-                    if (!canvas) return { x: 0, y: 0 };
-                    const rect = canvas.getBoundingClientRect();
-                    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-                }, []);
-                
-                const startDrawing = React.useCallback((event) => {
-                    if (!contextRef.current || !canvasRef.current) return;
-                    event.preventDefault();
-                    isPaintingRef.current = true;
-                    const { x, y } = getMousePos(event);
-                    contextRef.current.beginPath();
-                    contextRef.current.moveTo(x, y);
-                }, [getMousePos]);
-
-                const draw = React.useCallback((event) => {
-                    if (!isPaintingRef.current || !contextRef.current) return;
-                    event.preventDefault();
-                    const { x, y } = getMousePos(event);
-                    
-                    contextRef.current.globalAlpha = drawingOpacity; // Aplicar opacidad antes de cada trazo
-
-                    if (drawingTool === 'pen') {
-                        contextRef.current.globalCompositeOperation = 'source-over';
-                        contextRef.current.strokeStyle = drawingColor;
-                    } else if (drawingTool === 'eraser') {
-                        contextRef.current.globalCompositeOperation = 'destination-out';
-                    }
-                    contextRef.current.lineWidth = drawingLineWidth;
-                    contextRef.current.lineTo(x, y);
-                    contextRef.current.stroke();
-
-                    // No es estrictamente necesario restaurar globalAlpha aquí si solo dibujamos con esta herramienta
-                    // contextRef.current.globalAlpha = 1; 
-                }, [drawingTool, drawingColor, drawingLineWidth, drawingOpacity, getMousePos]);
-
-                const stopDrawing = React.useCallback(() => {
-                    if (!isPaintingRef.current || !contextRef.current) return;
-                    isPaintingRef.current = false;
-                    // Si quieres que la opacidad solo se aplique mientras se dibuja activamente, restaura aquí:
-                    // contextRef.current.globalAlpha = 1; 
-                }, []);
-
-                React.useEffect(() => {
-                    const canvasContainer = document.getElementById('drawing-canvas-container');
-                    if (!canvasContainer) return;
-                    const canInteractWithCanvas = isDrawingMode && isDrawingLayerVisible; 
-                    const onMouseDown = (e) => { if (isDrawingMode) startDrawing(e); };
-                    const onMouseMove = (e) => { if (isDrawingMode && isPaintingRef.current) draw(e); };
-                    const onMouseLeave = (e) => { if (isDrawingMode && isPaintingRef.current) stopDrawing(e); }; // Solo si está pintando
-                    const onMouseUpGlobal = (e) => { if (isPaintingRef.current) stopDrawing(e); }; 
-
-                    if (canInteractWithCanvas) {
-                        canvasContainer.addEventListener('mousedown', onMouseDown);
-                        canvasContainer.addEventListener('mousemove', onMouseMove);
-                        canvasContainer.addEventListener('mouseleave', onMouseLeave);
-                    } else {
-                        canvasContainer.removeEventListener('mousedown', onMouseDown);
-                        canvasContainer.removeEventListener('mousemove', onMouseMove);
-                        canvasContainer.removeEventListener('mouseleave', onMouseLeave);
-                    }
-                    document.addEventListener('mouseup', onMouseUpGlobal); 
-                    
-                    return () => {
-                        canvasContainer.removeEventListener('mousedown', onMouseDown);
-                        canvasContainer.removeEventListener('mousemove', onMouseMove);
-                        document.removeEventListener('mouseup', onMouseUpGlobal);
-                        canvasContainer.removeEventListener('mouseleave', onMouseLeave);
-                    };
-                }, [isDrawingMode, isDrawingLayerVisible, startDrawing, draw, stopDrawing]);
-
-
+                React.useEffect(() => { const canvasElement = canvasRef.current; const mainContentElement = mainContentRef.current; if (!canvasElement || !mainContentElement) return; const setupContext = () => { const { width, height } = mainContentElement.getBoundingClientRect(); canvasElement.width = Math.max(width, 1); canvasElement.height = Math.max(height, 1); const ctx = canvasElement.getContext('2d'); contextRef.current = ctx; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = drawingColor; ctx.lineWidth = drawingLineWidth; ctx.globalAlpha = drawingOpacity; }; setupContext(); const resizeObs = new ResizeObserver(entries => { const entry = entries[0]; if (canvasRef.current && contextRef.current) { const newRect = entry.contentRect; const newWidth = Math.max(newRect.width, 1); const newHeight = Math.max(newRect.height, 1); const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d'); if (canvasRef.current.width > 0 && canvasRef.current.height > 0) { tempCanvas.width = canvasRef.current.width; tempCanvas.height = canvasRef.current.height; tempCtx.drawImage(canvasRef.current, 0, 0); } canvasRef.current.width = newWidth; canvasRef.current.height = newHeight; contextRef.current.lineCap = 'round'; contextRef.current.lineJoin = 'round'; contextRef.current.strokeStyle = drawingColor; contextRef.current.lineWidth = drawingLineWidth; contextRef.current.globalAlpha = drawingOpacity; if (tempCanvas.width > 0) { contextRef.current.drawImage(tempCanvas, 0, 0); } } }); if (mainContentElement) resizeObs.observe(mainContentElement); return () => { if (mainContentElement) resizeObs.unobserve(mainContentElement); }; }, [drawingColor, drawingLineWidth, drawingOpacity]); 
+                const getMousePos = React.useCallback((event) => { const canvas = canvasRef.current; if (!canvas) return { x: 0, y: 0 }; const rect = canvas.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; }, []);
+                const startDrawing = React.useCallback((event) => { if (!contextRef.current) return; event.preventDefault(); isPaintingRef.current = true; const { x, y } = getMousePos(event); contextRef.current.beginPath(); contextRef.current.moveTo(x, y); }, [getMousePos]);
+                const draw = React.useCallback((event) => { if (!isPaintingRef.current || !contextRef.current) return; event.preventDefault(); const { x, y } = getMousePos(event); contextRef.current.globalAlpha = drawingOpacity; if (drawingTool === 'pen') { contextRef.current.globalCompositeOperation = 'source-over'; contextRef.current.strokeStyle = drawingColor; } else if (drawingTool === 'eraser') { contextRef.current.globalCompositeOperation = 'destination-out'; } contextRef.current.lineWidth = drawingLineWidth; contextRef.current.lineTo(x, y); contextRef.current.stroke(); }, [drawingTool, drawingColor, drawingLineWidth, drawingOpacity, getMousePos]);
+                const stopDrawing = React.useCallback(() => { isPaintingRef.current = false; }, []);
+                React.useEffect(() => { const canvasContainer = document.getElementById('drawing-canvas-container'); if (!canvasContainer) return; const onMouseDown = (e) => startDrawing(e); const onMouseMove = (e) => draw(e); const onMouseUpOrLeave = (e) => stopDrawing(e); if (isDrawingMode && isDrawingLayerVisible) { canvasContainer.addEventListener('mousedown', onMouseDown); canvasContainer.addEventListener('mousemove', onMouseMove); canvasContainer.addEventListener('mouseup', onMouseUpOrLeave); canvasContainer.addEventListener('mouseleave', onMouseUpOrLeave); } return () => { canvasContainer.removeEventListener('mousedown', onMouseDown); canvasContainer.removeEventListener('mousemove', onMouseMove); canvasContainer.removeEventListener('mouseup', onMouseUpOrLeave); canvasContainer.removeEventListener('mouseleave', onMouseUpOrLeave); }; }, [isDrawingMode, isDrawingLayerVisible, startDrawing, draw, stopDrawing]);
                 const handleToggleDrawingMode = React.useCallback(() => setIsDrawingMode(prev => !prev), []);
                 const handleToggleDrawingLayerVisibility = React.useCallback(() => setIsDrawingLayerVisible(prev => !prev), []);
-                const handleClearDrawing = React.useCallback(() => {
-                    if (contextRef.current && canvasRef.current) {
-                        contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                    }
-                }, []);
-
-                // --- Lógica restante de FlowApp (sin cambios importantes) ---
+                const handleClearDrawing = React.useCallback(() => { if (contextRef.current && canvasRef.current) { contextRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); } }, []);
                 React.useEffect(() => { setTimeout(() => setViewport(initialViewport, { duration: 0 }),0); }, [setViewport]);
                 const [autoLayout, setAutoLayout] = React.useState(false);
                 const [backgroundVariant, setBackgroundVariant] = React.useState('dots');
@@ -387,26 +397,14 @@
                 const [canUndo, setCanUndo] = React.useState(false);
                 const [canRedo, setCanRedo] = React.useState(false);
                 const updateUndoRedoState = React.useCallback(() => { setCanUndo(historyIndexRef.current > 0); setCanRedo(historyIndexRef.current < historyRef.current.length - 1); }, []);
-                window.recordAction = React.useCallback(() => { setTimeout(() => { const currentNodes = getNodes().map(n => ({...n})); const currentEdges = getEdges().map(e => ({...e})); const currentViewport = getViewport(); const lastStateInHistory = historyRef.current[historyIndexRef.current]; if (JSON.stringify(lastStateInHistory.nodes) === JSON.stringify(currentNodes) && JSON.stringify(lastStateInHistory.edges) === JSON.stringify(currentEdges) && JSON.stringify(lastStateInHistory.viewport) === JSON.stringify(currentViewport)) { return; } const newHistoryStack = historyRef.current.slice(0, historyIndexRef.current + 1); newHistoryStack.push({ nodes: currentNodes, edges: currentEdges, viewport: currentViewport }); if (newHistoryStack.length > MAX_HISTORY_LENGTH) { historyRef.current = newHistoryStack.slice(-MAX_HISTORY_LENGTH); } else { historyRef.current = newHistoryStack; } historyIndexRef.current = historyRef.current.length - 1; updateUndoRedoState(); }, 0); }, [getNodes, getEdges, getViewport, updateUndoRedoState]); 
+                window.recordAction = React.useCallback(() => { setTimeout(() => { const currentNodes = getNodes().map(n => ({...n})); const currentEdges = getEdges().map(e => ({...e})); const currentViewport = getViewport(); const lastStateInHistory = historyRef.current[historyIndexRef.current]; if (JSON.stringify(lastStateInHistory.nodes) === JSON.stringify(currentNodes) && JSON.stringify(lastStateInHistory.edges) === JSON.stringify(currentEdges) && JSON.stringify(lastStateInHistory.viewport) === JSON.stringify(currentViewport)) { return; } const newHistoryStack = historyRef.current.slice(0, historyIndexRef.current + 1); newHistoryStack.push({ nodes: currentNodes, edges: currentEdges, viewport: currentViewport }); historyRef.current = newHistoryStack.length > MAX_HISTORY_LENGTH ? newHistoryStack.slice(-MAX_HISTORY_LENGTH) : newHistoryStack; historyIndexRef.current = historyRef.current.length - 1; updateUndoRedoState(); }, 0); }, [getNodes, getEdges, getViewport, updateUndoRedoState]); 
                 const handleUndo = React.useCallback(() => { if (historyIndexRef.current > 0) { historyIndexRef.current -= 1; const prevState = historyRef.current[historyIndexRef.current]; setNodes(prevState.nodes.map(n => ({...n}))); setEdges(prevState.edges.map(e => ({...e}))); setViewport(prevState.viewport, {duration: 100}); updateUndoRedoState(); } }, [setNodes, setEdges, setViewport, updateUndoRedoState]);
                 const handleRedo = React.useCallback(() => { if (historyIndexRef.current < historyRef.current.length - 1) { historyIndexRef.current += 1; const nextState = historyRef.current[historyIndexRef.current]; setNodes(nextState.nodes.map(n => ({...n}))); setEdges(nextState.edges.map(e => ({...e}))); setViewport(nextState.viewport, {duration: 100}); updateUndoRedoState(); } }, [setNodes, setEdges, setViewport, updateUndoRedoState]);
                 React.useEffect(() => { updateUndoRedoState(); }, []);
                 window.getSelectedEdgeLineStyle = () => selectedEdgeLineStyle;
                 const updateNodeLabel = React.useCallback((nodeId, newLabel) => { setNodes((nds) => nds.map((node) => (node.id === nodeId && node.type === 'customNode') ? { ...node, data: { ...node.data, label: newLabel, outputValue: newLabel } } : node )); }, [setNodes]);
-                const memoizedNodeTypes = React.useMemo(() => ({ customNode: (props) => React.createElement(CustomNode, { ...props, onLabelChange: updateNodeLabel, recordAction: window.recordAction }), imageNode: ImageNode, concatenateNode: ConcatenateNodeComponent, resultNode: ResultNodeComponent, downloadNode: DownloadNodeComponent, capitalizeNode: CapitalizeNodeComponent, uppercaseNode: UppercaseNodeComponent, lowercaseNode: LowercaseNodeComponent }), [updateNodeLabel]); 
-               window.onAddNodeAndEdgeFromCustomNode = React.useCallback((newNode, newEdge) => {
-    const edgeData = { ...newEdge.data, lineStyle: selectedEdgeLineStyle };
-    const edgeStyle = getEdgeStyleObject(selectedEdgeLineStyle, newEdge.style?.stroke); 
-    setNodes(nds => nds.concat(newNode));
-    setEdges(eds => addEdge({
-        ...newEdge,
-        data: edgeData,
-        style: { ...(newEdge.style || {}), ...edgeStyle }, 
-        type: selectedEdgeType || 'customEdge',
-        label: ''
-    }, eds)); 
-    if(window.recordAction) window.recordAction();
-}, [setNodes, setEdges, selectedEdgeType, selectedEdgeLineStyle]);
+                const memoizedNodeTypes = React.useMemo(() => ({ customNode: (props) => React.createElement(CustomNode, { ...props, onLabelChange: updateNodeLabel, recordAction: window.recordAction }), imageNode: ImageNode, concatenateNode: ConcatenateNodeComponent, resultNode: ResultNodeComponent, displayNode: DisplayNodeComponent, downloadNode: DownloadNodeComponent, capitalizeNode: CapitalizeNodeComponent, uppercaseNode: UppercaseNodeComponent, lowercaseNode: LowercaseNodeComponent, geminiNode: GeminiNodeComponent, scriptNode: ScriptNodeComponent, fileAutoRunNode: FileAutoRunNodeComponent }), [updateNodeLabel]); 
+                window.onAddNodeAndEdgeFromCustomNode = React.useCallback((newNode, newEdge) => { const edgeData = { ...newEdge.data, lineStyle: selectedEdgeLineStyle }; const edgeStyle = getEdgeStyleObject(selectedEdgeLineStyle, newEdge.style?.stroke); setNodes(nds => nds.concat(newNode)); setEdges(eds => addEdge({ ...newEdge, data: edgeData, style: { ...(newEdge.style || {}), ...edgeStyle }, type: selectedEdgeType || 'customEdge', label: '' }, eds)); if(window.recordAction) window.recordAction(); }, [setNodes, setEdges, selectedEdgeType, selectedEdgeLineStyle]);
                 const onNodesChange = React.useCallback((changes) => { onNodesChangeInternal(changes); changes.forEach(change => { if (change.type === 'position' && change.dragging === false) { if(window.recordAction) window.recordAction(); } }); }, [onNodesChangeInternal]);
                 const onEdgesChange = React.useCallback((changes) => { onEdgesChangeInternal(changes); if (changes.some(c => c.type === 'remove')) { if(window.recordAction) window.recordAction(); } }, [onEdgesChangeInternal]);
                 const onConnect = React.useCallback((params) => { const edgeData = { lineStyle: selectedEdgeLineStyle }; const edgeStyle = getEdgeStyleObject(selectedEdgeLineStyle, selectedBorderColor); setEdges((eds) => addEdge({ ...params, type: selectedEdgeType || 'customEdge', data: edgeData, label: '', style: edgeStyle, markerEnd: { type: MarkerType.ArrowClosed, color: selectedBorderColor } }, eds)); if(window.recordAction) window.recordAction(); }, [setEdges, selectedBorderColor, selectedEdgeType, selectedEdgeLineStyle]);
@@ -416,10 +414,14 @@
                 const addImageHandler = React.useCallback(() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = e => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = event => { const imgSrc = event.target.result; const img = new Image(); img.onload = () => { nodeIdCounter++; const pos = getNewNodePosition(); const initialWidth = Math.min(200, img.naturalWidth); const initialHeight = (img.naturalHeight / img.naturalWidth) * initialWidth; setNodes(nds => nds.concat(createNewImageNode(nodeIdCounter.toString(), {x: pos.x - initialWidth/2 + 75, y: pos.y - initialHeight/2 + 25}, { src: imgSrc, width: initialWidth, height: initialHeight, originalWidth: img.naturalWidth, originalHeight: img.naturalHeight }))); if(window.recordAction) window.recordAction(); }; img.src = imgSrc; }; reader.readAsDataURL(file); } }; input.click(); }, [addNodeHelper]);
                 const addConcatenateNodeHandler = React.useCallback(() => addNodeHelper(createConcatenateNode), [addNodeHelper]);
                 const addResultNodeHandler = React.useCallback(() => addNodeHelper(createResultNode), [addNodeHelper]);
+                const addDisplayNodeHandler = React.useCallback(() => addNodeHelper(createDisplayNode), [addNodeHelper]);
                 const addDownloadNodeHandler = React.useCallback(() => addNodeHelper(createDownloadNode), [addNodeHelper]);
                 const addCapitalizeNodeHandler = React.useCallback(() => addNodeHelper(createCapitalizeNode), [addNodeHelper]);
                 const addUppercaseNodeHandler = React.useCallback(() => addNodeHelper(createUppercaseNode), [addNodeHelper]);
                 const addLowercaseNodeHandler = React.useCallback(() => addNodeHelper(createLowercaseNode), [addNodeHelper]);
+                const addGeminiNodeHandler = React.useCallback(() => addNodeHelper(createGeminiNode), [addNodeHelper]);
+                const addScriptNodeHandler = React.useCallback(() => addNodeHelper(createScriptNode), [addNodeHelper]);
+                const addFileAutoRunNodeHandler = React.useCallback(() => addNodeHelper(createFileAutoRunNode), [addNodeHelper]);
                 const handleCopySelected = React.useCallback(() => { const selectedNodesToCopy = getNodes().filter(n => n.selected); if (selectedNodesToCopy.length === 0) { setClipboard(null); return; } const copiedNodes = JSON.parse(JSON.stringify(selectedNodesToCopy.map(n => ({ ...n, selected: false })))); const selectedNodeIds = new Set(selectedNodesToCopy.map(n => n.id)); const copiedEdges = JSON.parse(JSON.stringify(getEdges().filter(edge => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)).map(e => ({ ...e, selected: false })))); setClipboard({ nodes: copiedNodes, edges: copiedEdges }); }, [getNodes, getEdges]);
                 const handlePaste = React.useCallback(() => { if (!clipboard || clipboard.nodes.length === 0) return; const { x: viewX, y: viewY, zoom } = getViewport(); const mainContentEl = mainContentRef.current; const rfBounds = mainContentEl?.getBoundingClientRect() || {width: window.innerWidth, height: window.innerHeight}; const PADDING = 20; const firstNodeInClipboard = clipboard.nodes[0]; const pasteBaseX = (rfBounds.width / 2 - viewX) / zoom - (firstNodeInClipboard.width || 150) / (2*zoom) + PADDING / zoom; const pasteBaseY = (rfBounds.height / 3 - viewY) / zoom - (firstNodeInClipboard.height || 40) / (2*zoom) + PADDING / zoom; const newNodes = []; const idMapping = new Map(); clipboard.nodes.forEach((nodeToCopy, index) => { nodeIdCounter++; const newNodeId = nodeIdCounter.toString(); idMapping.set(nodeToCopy.id, newNodeId); const dx = nodeToCopy.position.x - firstNodeInClipboard.position.x; const dy = nodeToCopy.position.y - firstNodeInClipboard.position.y; newNodes.push({ ...nodeToCopy, id: newNodeId, position: { x: pasteBaseX + dx, y: pasteBaseY + dy }, selected: true, data: { ...nodeToCopy.data } }); }); const newEdges = clipboard.edges.map(edgeToCopy => { nodeIdCounter++; return { ...edgeToCopy, id: `e-${nodeIdCounter}`, source: idMapping.get(edgeToCopy.source), target: idMapping.get(edgeToCopy.target), selected: false }; }); setNodes(nds => nds.map(n => ({...n, selected: false})).concat(newNodes)); setEdges(eds => eds.map(e => ({...e, selected: false})).concat(newEdges)); if(window.recordAction) window.recordAction(); }, [clipboard, getViewport, setNodes, setEdges]);
                 const handleDuplicateSelected = React.useCallback(() => { const selectedNodesToDuplicate = getNodes().filter(n => n.selected); if (selectedNodesToDuplicate.length === 0) return; const OFFSET = 30; const newNodes = []; const idMapping = new Map(); selectedNodesToDuplicate.forEach((nodeToDuplicate) => { nodeIdCounter++; const newNodeId = nodeIdCounter.toString(); idMapping.set(nodeToDuplicate.id, newNodeId); newNodes.push(JSON.parse(JSON.stringify({ ...nodeToDuplicate, id: newNodeId, position: { x: nodeToDuplicate.position.x + OFFSET, y: nodeToDuplicate.position.y + OFFSET }, selected: true, data: {...nodeToDuplicate.data} }))); }); const selectedNodeIds = new Set(selectedNodesToDuplicate.map(n => n.id)); const newEdges = getEdges().filter(edge => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)).map(edgeToDuplicate => { nodeIdCounter++; return JSON.parse(JSON.stringify({ ...edgeToDuplicate, id: `e-${nodeIdCounter}`, source: idMapping.get(edgeToDuplicate.source), target: idMapping.get(edgeToDuplicate.target), selected: false })); }); setNodes(nds => nds.map(n => ({...n, selected: false})).concat(newNodes)); setEdges(eds => eds.concat(newEdges)); if(window.recordAction) window.recordAction(); }, [getNodes, getEdges, setNodes, setEdges]);
@@ -434,11 +436,120 @@
                 const exportHandler = React.useCallback(() => { const flow = { nodes: getNodes(), edges: getEdges(), viewport: getViewport() }; const dataStr = JSON.stringify(flow, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'xoconodo.json'; a.click(); URL.revokeObjectURL(url); }, [getNodes, getEdges, getViewport]);
                 const shareHandler = React.useCallback(() => { try { const flow = { nodes: getNodes(), edges: getEdges(), viewport: getViewport() }; const flowString = JSON.stringify(flow); const encodedFlow = encodeURIComponent(btoa(flowString)); const shareUrl = `${window.location.origin}${window.location.pathname}?flow=${encodedFlow}`; navigator.clipboard.writeText(shareUrl).then(() => { alert('¡Enlace para compartir copiado al portapapeles!\nPuedes pegarlo en una nueva pestaña o enviarlo.'); }).catch(err => { console.error('Error al copiar al portapapeles: ', err); prompt('Copia este enlace para compartir:', shareUrl); }); if (shareUrl.length > 2000) { console.warn("La URL para compartir es muy larga y podría no funcionar en todos los navegadores/plataformas."); } } catch (e) { console.error("Error al generar enlace para compartir:", e); alert("Error al generar el enlace para compartir."); } }, [getNodes, getEdges, getViewport]);
                 const toggleLockHandler = React.useCallback(() => { if (isDrawingMode) setIsDrawingMode(false); setLocked(prev => !prev); }, [isDrawingMode]);
+                
+                const handleRunFlow = React.useCallback(async (showAlert = true) => {
+                    const currentNodes = getNodes();
+                    const currentEdges = getEdges();
+                    const inDegree = new Map(currentNodes.map(node => [node.id, 0]));
+                    const adjList = new Map(currentNodes.map(node => [node.id, []]));
+                    currentEdges.forEach(edge => {
+                        if (adjList.has(edge.source)) adjList.get(edge.source).push(edge.target);
+                        if (inDegree.has(edge.target)) inDegree.set(edge.target, inDegree.get(edge.target) + 1);
+                    });
+                    const queue = currentNodes.filter(node => inDegree.get(node.id) === 0).map(node => node.id);
+                    const sortedNodeIds = [];
+                    while (queue.length > 0) {
+                        const nodeId = queue.shift();
+                        sortedNodeIds.push(nodeId);
+                        (adjList.get(nodeId) || []).forEach(neighborId => {
+                            inDegree.set(neighborId, inDegree.get(neighborId) - 1);
+                            if (inDegree.get(neighborId) === 0) queue.push(neighborId);
+                        });
+                    }
+
+                    if (sortedNodeIds.length !== currentNodes.length) {
+                        if (showAlert) alert("Error: Se detectó un ciclo en el flujo. No se puede ejecutar.");
+                        return;
+                    }
+
+                    for (const nodeId of sortedNodeIds) {
+                        const nodeToProcess = getNodes().find(n => n.id === nodeId);
+                        if (!nodeToProcess) continue;
+
+                        if (nodeToProcess.type === 'geminiNode') {
+                            const { data } = nodeToProcess;
+                            if (!data.apiKey || !data.inputValue) {
+                                console.warn(`Omitiendo nodo Gemini ${nodeId}: falta API Key o valor de entrada.`);
+                                setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, status: 'Omitido' } } : n));
+                                continue;
+                            }
+                            setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, status: 'Procesando...', outputValue: '' } } : n));
+                            const API_KEY = data.apiKey;
+                            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+                            try {
+                                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: data.inputValue }] }] }) });
+                                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error?.message || 'Error en la respuesta de la API.'); }
+                                const responseData = await response.json();
+                                let resultText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || 'No se recibió una respuesta válida.';
+                                resultText = resultText.replace(/\$\s*\\boxed{([^}]*)}\s*\$/g, '$1').replace(/\\\[|\\\]|\$|\*|`/g, '').trim();
+                                setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, status: 'Success', outputValue: resultText } } : n));
+                            } catch (error) {
+                                console.error(`Fallo al ejecutar la tarea Gemini para el nodo ${nodeId}:`, error);
+                                setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, status: `Error: ${error.message}`, outputValue: '' } } : n));
+                            }
+                        }
+                    }
+                    if(window.recordAction) window.recordAction();
+                    if (showAlert) alert("Ejecución de flujo completada.");
+                }, [getNodes, getEdges, setNodes]);
+                
+                window.handleRunFlow = () => handleRunFlow(false);
+
                 React.useEffect(() => { if (selectedElement && selectedElement.isNode && selectedElement.type === 'customNode') { const node = getNode(selectedElement.id); if (node && (node.data.shape !== selectedShape || node.data.color !== selectedColor || node.data.borderColor !== selectedBorderColor || node.data.borderStyle !== selectedBorderStyle)) { setNodes(nds => nds.map(n => n.id === node.id ? { ...n, data: { ...n.data, shape: selectedShape, color: selectedColor, borderColor: selectedBorderColor, borderStyle: selectedBorderStyle } } : n )); if(window.recordAction) window.recordAction(); } } }, [selectedShape, selectedColor, selectedBorderColor, selectedBorderStyle, selectedElement, getNode, setNodes]);
                 const handleSelectEdgeType = (newType) => { setSelectedEdgeType(newType); if (selectedElement && selectedElement.isEdge) { setEdges(eds => eds.map(e => e.id === selectedElement.id ? { ...e, type: newType } : e)); if(window.recordAction) window.recordAction(); } };
                 const handleSelectEdgeLineStyle = (newLineStyle) => { setSelectedEdgeLineStyle(newLineStyle); if (selectedElement && selectedElement.isEdge) { setEdges(eds => eds.map(e => { if (e.id === selectedElement.id) { const newEdgeStyle = getEdgeStyleObject(newLineStyle, e.style.stroke); return { ...e, data: { ...e.data, lineStyle: newLineStyle }, style: { ...e.style, ...newEdgeStyle } }; } return e; })); if(window.recordAction) window.recordAction(); } };
                 const onSelectionChange = React.useCallback(({ nodes: selNodes, edges: selEdges }) => { if (selNodes.length === 1 && selEdges.length === 0) { const node = selNodes[0]; setSelectedElement({ id: node.id, isNode: true, type: node.type }); if (node.type === 'customNode') { setSelectedShape(node.data.shape); setSelectedColor(node.data.color); setSelectedBorderColor(node.data.borderColor); setSelectedBorderStyle(node.data.borderStyle); } } else if (selEdges.length === 1 && selNodes.length === 0) { const edge = selEdges[0]; setSelectedElement({ id: edge.id, isEdge: true }); setSelectedEdgeType(edge.type || 'customEdge'); setSelectedEdgeLineStyle(edge.data?.lineStyle || 'solid'); setSelectedBorderColor(edge.style?.stroke || '#FF0066'); } else if (selNodes.length > 0 || selEdges.length > 0) { setSelectedElement({ isNode: selNodes.length > 0, isEdge: selEdges.length > 0, multiple: true }); } else { setSelectedElement(null); } }, [setSelectedBorderColor]);
-                React.useEffect(() => { let changedInPropagation = false; const currentNodesSnapshot = getNodes(); const currentEdgesSnapshot = getEdges(); const nodeMap = new Map(currentNodesSnapshot.map(n => [n.id, n])); const updatedNodesArray = currentNodesSnapshot.map(node => { let updatedNodeData = { ...node.data }; let nodeDataChangedThisIteration = false; let newInputValue = ''; if (['resultNode', 'downloadNode', 'capitalizeNode', 'uppercaseNode', 'lowercaseNode'].includes(node.type)) { const incomingEdge = currentEdgesSnapshot.find(edge => edge.target === node.id && edge.targetHandle === 'input'); if (incomingEdge) { const sourceNode = nodeMap.get(incomingEdge.source); if (sourceNode) { newInputValue = sourceNode.data.outputValue !== undefined ? sourceNode.data.outputValue : (sourceNode.data.label || ''); } } if (updatedNodeData.inputValue !== newInputValue) { updatedNodeData.inputValue = newInputValue; nodeDataChangedThisIteration = true; } } if (node.type === 'concatenateNode') { const incomingEdges = currentEdgesSnapshot.filter(edge => edge.target === node.id); const newInputs = {}; for (let i = 0; i < (node.data.numInputs || 2); i++) { const handleId = `input_${i}`; const edge = incomingEdges.find(e => e.targetHandle === handleId); if (edge) { const sourceNode = nodeMap.get(edge.source); if (sourceNode) { newInputs[handleId] = sourceNode.data.outputValue !== undefined ? sourceNode.data.outputValue : (sourceNode.data.label || ''); } else { newInputs[handleId] = ''; } } else { newInputs[handleId] = ''; } } if (JSON.stringify(newInputs) !== JSON.stringify(node.data.inputs) || node.data.separator !== updatedNodeData.separator) { const separator = updatedNodeData.separator || node.data.separator || ''; const concatenatedValue = Object.values(newInputs).filter(v => typeof v === 'string' && v !== '').join(separator); updatedNodeData.inputs = newInputs; updatedNodeData.outputValue = concatenatedValue; nodeDataChangedThisIteration = true; } } else if (node.type === 'capitalizeNode') { const currentInputValue = updatedNodeData.inputValue || ''; const newOutput = typeof currentInputValue === 'string' && currentInputValue.length > 0  ? currentInputValue.charAt(0).toUpperCase() + currentInputValue.slice(1).toLowerCase()  : ''; if (updatedNodeData.outputValue !== newOutput) { updatedNodeData.outputValue = newOutput; nodeDataChangedThisIteration = true; } } else if (node.type === 'uppercaseNode') { const currentInputValue = updatedNodeData.inputValue || ''; const newOutput = typeof currentInputValue === 'string' ? currentInputValue.toUpperCase() : ''; if (updatedNodeData.outputValue !== newOutput) { updatedNodeData.outputValue = newOutput; nodeDataChangedThisIteration = true; } } else if (node.type === 'lowercaseNode') { const currentInputValue = updatedNodeData.inputValue || ''; const newOutput = typeof currentInputValue === 'string' ? currentInputValue.toLowerCase() : ''; if (updatedNodeData.outputValue !== newOutput) { updatedNodeData.outputValue = newOutput; nodeDataChangedThisIteration = true; } } if (nodeDataChangedThisIteration) { changedInPropagation = true; return { ...node, data: updatedNodeData }; } return node; }); if (changedInPropagation) { setNodes(updatedNodesArray, { replace: true }); } }, [nodes, edges, getNodes, getEdges, setNodes]);
+                React.useEffect(() => {
+                    let changedInPropagation = false;
+                    const currentNodesSnapshot = getNodes();
+                    const currentEdgesSnapshot = getEdges();
+                    const nodeMap = new Map(currentNodesSnapshot.map(n => [n.id, n]));
+
+                    const updatedNodesArray = currentNodesSnapshot.map(node => {
+                        let updatedNodeData = { ...node.data };
+                        let nodeDataChangedThisIteration = false;
+                        let newInputValue = '';
+
+                        if (['resultNode', 'displayNode', 'downloadNode', 'capitalizeNode', 'uppercaseNode', 'lowercaseNode', 'geminiNode', 'scriptNode'].includes(node.type)) {
+                            const incomingEdge = currentEdgesSnapshot.find(edge => edge.target === node.id && edge.targetHandle === 'input');
+                            if (incomingEdge) { const sourceNode = nodeMap.get(incomingEdge.source); if (sourceNode) { newInputValue = sourceNode.data.outputValue !== undefined ? sourceNode.data.outputValue : (sourceNode.data.label || ''); } }
+                            if (updatedNodeData.inputValue !== newInputValue) { 
+                                updatedNodeData.inputValue = newInputValue; 
+                                if (node.type === 'displayNode') { updatedNodeData.outputValue = newInputValue; }
+                                nodeDataChangedThisIteration = true; 
+                            }
+                        }
+
+                        if (node.type === 'concatenateNode') {
+                            const incomingEdges = currentEdgesSnapshot.filter(edge => edge.target === node.id);
+                            const newInputs = {};
+                            for (let i = 0; i < (node.data.numInputs || 2); i++) { const handleId = `input_${i}`; const edge = incomingEdges.find(e => e.targetHandle === handleId); newInputs[handleId] = edge ? (nodeMap.get(edge.source)?.data.outputValue ?? '') : ''; }
+                            if (JSON.stringify(newInputs) !== JSON.stringify(node.data.inputs) || node.data.separator !== updatedNodeData.separator) { const separator = updatedNodeData.separator || node.data.separator || ''; const concatenatedValue = Object.values(newInputs).filter(v => typeof v === 'string').join(separator); updatedNodeData.inputs = newInputs; updatedNodeData.outputValue = concatenatedValue; nodeDataChangedThisIteration = true; }
+                        } else if (node.type === 'capitalizeNode') { const currentInputValue = updatedNodeData.inputValue || ''; const newOutput = typeof currentInputValue === 'string' && currentInputValue.length > 0 ? currentInputValue.charAt(0).toUpperCase() + currentInputValue.slice(1).toLowerCase() : ''; if (updatedNodeData.outputValue !== newOutput) { updatedNodeData.outputValue = newOutput; nodeDataChangedThisIteration = true; }
+                        } else if (node.type === 'uppercaseNode') { const currentInputValue = updatedNodeData.inputValue || ''; const newOutput = typeof currentInputValue === 'string' ? currentInputValue.toUpperCase() : ''; if (updatedNodeData.outputValue !== newOutput) { updatedNodeData.outputValue = newOutput; nodeDataChangedThisIteration = true; }
+                        } else if (node.type === 'lowercaseNode') { const currentInputValue = updatedNodeData.inputValue || ''; const newOutput = typeof currentInputValue === 'string' ? currentInputValue.toLowerCase() : ''; if (updatedNodeData.outputValue !== newOutput) { updatedNodeData.outputValue = newOutput; nodeDataChangedThisIteration = true; }
+                        } else if (node.type === 'scriptNode') {
+                            const currentInputValue = updatedNodeData.inputValue;
+                            let newOutput;
+                            try {
+                                const userFunction = new Function('input', updatedNodeData.script);
+                                newOutput = userFunction(currentInputValue);
+                            } catch (e) {
+                                console.error(`Error executing script in node ${node.id}:`, e);
+                                newOutput = `Error: ${e.message}`;
+                            }
+                            if (JSON.stringify(updatedNodeData.outputValue) !== JSON.stringify(newOutput)) {
+                                updatedNodeData.outputValue = newOutput;
+                                nodeDataChangedThisIteration = true;
+                            }
+                        }
+                        
+                        if (nodeDataChangedThisIteration) { changedInPropagation = true; return { ...node, data: updatedNodeData }; }
+                        return node;
+                    });
+
+                    if (changedInPropagation) { setNodes(updatedNodesArray, { replace: true }); }
+                }, [nodes, edges, getNodes, getEdges, setNodes]);
 
 
                 return React.createElement(React.Fragment, null, 
@@ -449,13 +560,9 @@
                                 onConnect: onConnect, onSelectionChange: onSelectionChange,
                                 nodeTypes: memoizedNodeTypes, edgeTypes: edgeTypes,
                                 attributionPosition: null, deleteKeyCode: null,
-                                nodesDraggable: !locked && !isDrawingMode, 
-                                nodesConnectable: !locked && !isDrawingMode,
-                                elementsSelectable: !locked && !isDrawingMode,
-                                panOnDrag: !isDrawingMode,
-                                zoomOnScroll: !isDrawingMode,
-                                zoomOnDoubleClick: !isDrawingMode,
-                                zoomOnPinch: !isDrawingMode,
+                                nodesDraggable: !locked && !isDrawingMode, nodesConnectable: !locked && !isDrawingMode,
+                                elementsSelectable: !locked && !isDrawingMode, panOnDrag: !isDrawingMode,
+                                zoomOnScroll: !isDrawingMode, zoomOnDoubleClick: !isDrawingMode, zoomOnPinch: !isDrawingMode,
                                 defaultEdgeOptions: { type: 'customEdge', label: '', style: { stroke: selectedBorderColor, strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: selectedBorderColor } },
                                 connectionLineStyle: getEdgeStyleObject(selectedEdgeLineStyle, selectedBorderColor),
                                 connectionLineType: 'customEdge',
@@ -463,37 +570,17 @@
                             },
                                 React.createElement(Background, { variant: backgroundVariant, gap: 20, size: 1, color: 'var(--dots-color)'}),
                                 React.createElement(FloatingHeaderContent, { onUndo: handleUndo, onRedo: handleRedo, canUndo: canUndo, canRedo: canRedo }),
-                                React.createElement(LeftSidebar, { onAddNode: addNodeHandler, onAddImage: addImageHandler, onAddConcatenateNode: addConcatenateNodeHandler, onAddResultNode: addResultNodeHandler, onAddDownloadNode: addDownloadNodeHandler, onAddCapitalizeNode: addCapitalizeNodeHandler, onAddUppercaseNode: addUppercaseNodeHandler, onAddLowercaseNode: addLowercaseNodeHandler, autoLayout, onToggleAutoLayout: toggleAutoLayoutHandler, onRecenter: recenterHandler, onImport: importHandler, onExport: exportHandler, onShare: shareHandler }),
+                                React.createElement(LeftSidebar, { onAddNode: addNodeHandler, onAddImage: addImageHandler, onAddConcatenateNode: addConcatenateNodeHandler, onAddResultNode: addResultNodeHandler, onAddDisplayNode: addDisplayNodeHandler, onAddDownloadNode: addDownloadNodeHandler, onAddGeminiNode: addGeminiNodeHandler, onAddScriptNode: addScriptNodeHandler, onAddFileAutoRunNode: addFileAutoRunNodeHandler, onAddCapitalizeNode: addCapitalizeNodeHandler, onAddUppercaseNode: addUppercaseNodeHandler, onAddLowercaseNode: addLowercaseNodeHandler, autoLayout, onToggleAutoLayout: toggleAutoLayoutHandler, onRecenter: recenterHandler, onImport: importHandler, onExport: exportHandler, onShare: shareHandler, onRunFlow: handleRunFlow }),
                                 React.createElement(ToolsToolbar, { selectedElement, selectedShape, onSelectShape: setSelectedShape, selectedColor, onSelectColor: setSelectedColor, selectedBorderColor, onSelectBorderColor: setSelectedBorderColor, selectedBorderStyle, onSelectBorderStyle: setSelectedBorderStyle, selectedEdgeType, onSelectEdgeType: handleSelectEdgeType, selectedEdgeLineStyle, onSelectEdgeLineStyle: handleSelectEdgeLineStyle, onDeleteSelectedElements: deleteSelectedElementsHandler, onDuplicateSelected: handleDuplicateSelected }),
                                 React.createElement(ZoomControls, { onZoomIn: zoomIn, onZoomOut: zoomOut, onFitView: recenterHandler, locked: locked, onToggleLock: toggleLockHandler }),
                                 React.createElement(MiniMap, { nodeStrokeWidth: 2, nodeBorderRadius: 2, maskColor: 'rgba(255, 0, 102, 0.1)', pannable: true, zoomable: true, style: { width: 180, height: 120, bottom: '10px', right:'-3px' }, position: 'bottom-right' }),
                                 React.createElement('div', {className: 'custom-attribution'}, 'Powered by ', React.createElement('a', {href: 'https://xocostudio.com/', target: '_blank'}, 'XocoStudio'), ' | ', React.createElement('a', {href: 'https://xocostudio.com/', target: '_blank'}, 'Xocomon') )
                             ),
-                            React.createElement('div', {
-                                id: 'drawing-canvas-container',
-                                className: `${isDrawingLayerVisible ? 'layer-visible' : ''} ${isDrawingMode && isDrawingLayerVisible ? 'drawing-active' : ''}`,
-                            },
-                                React.createElement('canvas', {
-                                    id: 'drawing-canvas',
-                                    ref: canvasRef
-                                })
+                            React.createElement('div', { id: 'drawing-canvas-container', className: `${isDrawingLayerVisible ? 'layer-visible' : ''} ${isDrawingMode && isDrawingLayerVisible ? 'drawing-active' : ''}`},
+                                React.createElement('canvas', { id: 'drawing-canvas', ref: canvasRef })
                             )
                         ),
-                        React.createElement(DrawingToolbar, {
-                            isDrawingMode: isDrawingMode,
-                            onToggleDrawingMode: handleToggleDrawingMode,
-                            drawingTool: drawingTool,
-                            onSetDrawingTool: setDrawingTool,
-                            drawingColor: drawingColor,
-                            onSetDrawingColor: setDrawingColor,
-                            drawingLineWidth: drawingLineWidth,
-                            onSetDrawingLineWidth: setDrawingLineWidth,
-                            onClearDrawing: handleClearDrawing,
-                            isDrawingLayerVisible: isDrawingLayerVisible, 
-                            onToggleDrawingLayerVisibility: handleToggleDrawingLayerVisibility,
-                            drawingOpacity: drawingOpacity, // Pasar estado opacidad
-                            onSetDrawingOpacity: setDrawingOpacity // Pasar handler opacidad
-                        })
+                        React.createElement(DrawingToolbar, { isDrawingMode: isDrawingMode, onToggleDrawingMode: handleToggleDrawingMode, drawingTool: drawingTool, onSetDrawingTool: setDrawingTool, drawingColor: drawingColor, onSetDrawingColor: setDrawingColor, drawingLineWidth: drawingLineWidth, onSetDrawingLineWidth: setDrawingLineWidth, onClearDrawing: handleClearDrawing, isDrawingLayerVisible: isDrawingLayerVisible, onToggleDrawingLayerVisibility: handleToggleDrawingLayerVisibility, drawingOpacity: drawingOpacity, onSetDrawingOpacity: setDrawingOpacity })
                     )
                 );
             };
